@@ -5,8 +5,8 @@ import (
 	"hash/fnv"
 )
 
-func GenerateShortKey(longUrl string) string {
+func GenerateShortKey(longURL string) string {
 	h := fnv.New64a()
-	h.Write([]byte(longUrl))
+	h.Write([]byte(longURL))
 	return base64.URLEncoding.EncodeToString(h.Sum(nil))
 }

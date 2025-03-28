@@ -9,23 +9,23 @@ import (
 
 func processPostRequest(res http.ResponseWriter, req *http.Request) {
 	longUrl, err := io.ReadAll(req.Body)
-	longUrlStr := string(longUrl)
+	longURLStr := string(longUrl)
 	if err != nil {
 		http.Error(res, "Error reading body", http.StatusBadRequest)
 		return
 	}
-	_, err = url.ParseRequestURI(longUrlStr)
+	_, err = url.ParseRequestURI(longURLStr)
 	if err != nil {
 		http.Error(res, "Got incorrect url to shorten", http.StatusBadRequest)
 		return
 	}
 
-	shortUrl := utils.GenerateShortKey(longUrlStr)
-	urlMap[shortUrl] = longUrlStr
+	shortURL := utils.GenerateShortKey(longURLStr)
+	urlMap[shortURL] = longURLStr
 
 	res.Header().Set("Content-Type", "text/plain")
 	res.WriteHeader(http.StatusCreated)
-	res.Write([]byte(shortUrl))
+	res.Write([]byte(shortURL))
 }
 
 func processGetRequest(res http.ResponseWriter, id string) {
