@@ -8,8 +8,8 @@ import (
 )
 
 func processPostRequest(res http.ResponseWriter, req *http.Request) {
-	longUrl, err := io.ReadAll(req.Body)
-	longURLStr := string(longUrl)
+	longURL, err := io.ReadAll(req.Body)
+	longURLStr := string(longURL)
 	if err != nil {
 		http.Error(res, "Error reading body", http.StatusBadRequest)
 		return
@@ -29,9 +29,9 @@ func processPostRequest(res http.ResponseWriter, req *http.Request) {
 }
 
 func processGetRequest(res http.ResponseWriter, id string) {
-	longUrlStr, exists := urlMap[id]
+	longURLStr, exists := urlMap[id]
 	if exists {
-		res.Header().Set("Location", longUrlStr)
+		res.Header().Set("Location", longURLStr)
 		res.WriteHeader(http.StatusTemporaryRedirect)
 	} else {
 		http.Error(res, "Short url not found", http.StatusBadRequest)
