@@ -25,7 +25,7 @@ func processPostRequest(res http.ResponseWriter, req *http.Request) {
 
 	res.Header().Set("Content-Type", "text/plain")
 	res.WriteHeader(http.StatusCreated)
-	res.Write([]byte(shortURL))
+	res.Write([]byte(utils.PrepareShortURL(shortURL, req)))
 }
 
 func processGetRequest(res http.ResponseWriter, id string) {
