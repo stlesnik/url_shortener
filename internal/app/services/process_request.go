@@ -1,8 +1,7 @@
-package utils
+package services
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"strings"
 )
@@ -19,18 +18,4 @@ func ProcessRequest(res http.ResponseWriter, req *http.Request) (string, string,
 		return "", "", errors.New("incorrect method: only GET and POST allowed")
 	}
 	return id, method, nil
-}
-
-func PrepareShortURL(shortURL string, r *http.Request) string {
-	scheme := "http"
-	if r.TLS != nil {
-		scheme = "https"
-	}
-
-	host := r.Host
-	if forwardedHost := r.Header.Get("X-Forwarded-Host"); forwardedHost != "" {
-		host = forwardedHost
-	}
-
-	return fmt.Sprintf("%s://%s/%s", scheme, host, shortURL)
 }
