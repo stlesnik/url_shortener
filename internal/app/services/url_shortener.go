@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func PrepareShortURL(shortURL string, r *http.Request) string {
+func PrepareShortURL(urlHash string, r *http.Request) string {
 	scheme := "http"
 	if r.TLS != nil {
 		scheme = "https"
@@ -16,5 +16,5 @@ func PrepareShortURL(shortURL string, r *http.Request) string {
 		host = forwardedHost
 	}
 
-	return fmt.Sprintf("%s://%s/%s", scheme, host, shortURL)
+	return fmt.Sprintf("%s://%s/%s", scheme, host, urlHash)
 }

@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
+	"github.com/go-chi/chi/v5"
 	"github.com/stlesnik/url_shortener/internal/app/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -13,7 +15,7 @@ import (
 	"testing"
 )
 
-func TestHandler_processPostRequest(t *testing.T) {
+func TestHandler_SaveURL(t *testing.T) {
 	repo := storage.NewInMemoryStorage()
 	handler := NewHandler(repo)
 
@@ -56,7 +58,7 @@ func TestHandler_processPostRequest(t *testing.T) {
 			r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(data.Encode()))
 			r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 			w := httptest.NewRecorder()
-			handler.processPostRequest(w, r)
+			handler.SaveURL(w, r)
 
 			require.Equal(t, tt.expected.statusCode, w.Code)
 			res := w.Result()
@@ -71,7 +73,7 @@ func TestHandler_processPostRequest(t *testing.T) {
 	}
 }
 
-func TestHandler_processGetRequest(t *testing.T) {
+func TestHandler_GetLongURL(t *testing.T) {
 	repo := storage.NewInMemoryStorage()
 	repo.Save("_SGMGLQIsIM=", "http://mbrgaoyhv.yandex")
 	handler := NewHandler(repo)
@@ -83,12 +85,12 @@ func TestHandler_processGetRequest(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		id       string
+		path     string
 		expected expected
 	}{
 		{
 			name: "Url exists",
-			id:   "_SGMGLQIsIM=",
+			path: "/_SGMGLQIsIM=",
 			expected: expected{
 				statusCode: http.StatusTemporaryRedirect,
 				location:   "http://mbrgaoyhv.yandex",
@@ -96,7 +98,7 @@ func TestHandler_processGetRequest(t *testing.T) {
 		},
 		{
 			name: "Url dont exist",
-			id:   "invalid-id",
+			path: "/invalid-path",
 			expected: expected{
 				statusCode: http.StatusBadRequest,
 				location:   "",
@@ -105,8 +107,15 @@ func TestHandler_processGetRequest(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodGet, tt.path, nil)
+			//prepare chi context
+			id := strings.TrimPrefix(tt.path, "/")
+			rc := chi.NewRouteContext()
+			rc.URLParams.Add("id", id)
+			r = r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, rc))
+
 			w := httptest.NewRecorder()
-			handler.processGetRequest(w, tt.id)
+			handler.GetLongURL(w, r)
 
 			require.Equal(t, tt.expected.statusCode, w.Code)
 			if tt.expected.statusCode == http.StatusTemporaryRedirect {

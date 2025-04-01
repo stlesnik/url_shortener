@@ -1,11 +1,10 @@
 package handlers
 
 import (
-	"fmt"
+	"github.com/go-chi/chi/v5"
 	"github.com/stlesnik/url_shortener/internal/app/services"
 	"github.com/stlesnik/url_shortener/internal/app/storage"
 	"net/http"
-	"net/url"
 )
 
 type Handler struct {
@@ -16,44 +15,30 @@ func NewHandler(repo storage.Repository) *Handler {
 	return &Handler{repo: repo}
 }
 
-func (h *Handler) MainHandler(res http.ResponseWriter, req *http.Request) {
-	id, method, err := services.ProcessRequest(res, req)
+func (h *Handler) SaveURL(res http.ResponseWriter, req *http.Request) {
+	//get long url from body
+	longURLStr, err := services.GetLongURL(req)
 	if err != nil {
-		return
+		http.Error(res, err.Error(), http.StatusBadRequest)
 	}
-	if method == http.MethodPost {
-		h.processPostRequest(res, req)
-	} else {
-		h.processGetRequest(res, id)
-	}
-}
+	//generate short url
+	urlHash := services.GenerateShortKey(longURLStr)
 
-func (h *Handler) processPostRequest(res http.ResponseWriter, req *http.Request) {
-	err := req.ParseForm()
-	if err != nil {
-		http.Error(res, "Error reading body", http.StatusBadRequest)
-		return
-	}
-	longURLStr := req.FormValue("url")
-	_, err = url.ParseRequestURI(longURLStr)
-	if err != nil {
-		errorText := fmt.Sprintf("Got incorrect url to shorten: url=%v, err=%v", longURLStr, err.Error())
-		http.Error(res, errorText, http.StatusBadRequest)
-		return
-	}
+	//save short url
+	err = h.repo.Save(urlHash, longURLStr)
 
-	shortURL := services.GenerateShortKey(longURLStr)
-	err = h.repo.Save(shortURL, longURLStr)
 	if err == nil {
+		//generate response
 		res.Header().Set("Content-Type", "text/plain")
 		res.WriteHeader(http.StatusCreated)
-		res.Write([]byte(services.PrepareShortURL(shortURL, req)))
+		res.Write([]byte(services.PrepareShortURL(urlHash, req)))
 	} else {
 		http.Error(res, "Failed to save short url", http.StatusInternalServerError)
 	}
 }
 
-func (h *Handler) processGetRequest(res http.ResponseWriter, id string) {
+func (h *Handler) GetLongURL(res http.ResponseWriter, req *http.Request) {
+	id := chi.URLParam(req, "id")
 	longURLStr, exists := h.repo.Get(id)
 	if exists {
 		res.Header().Set("Location", longURLStr)

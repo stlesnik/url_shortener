@@ -1,19 +1,20 @@
 package server
 
 import (
+	"github.com/go-chi/chi/v5"
 	"github.com/stlesnik/url_shortener/internal/app/storage"
 	"net/http"
 )
 
 type Server struct {
-	router *http.ServeMux
+	router chi.Router
 	repo   storage.Repository
 	port   string
 }
 
 func NewServer(repo storage.Repository, port string) *Server {
 	s := &Server{
-		router: http.NewServeMux(),
+		router: chi.NewRouter(),
 		repo:   repo,
 		port:   port,
 	}

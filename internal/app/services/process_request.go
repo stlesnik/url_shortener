@@ -2,20 +2,24 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
-	"strings"
+	"net/url"
 )
 
-func ProcessRequest(res http.ResponseWriter, req *http.Request) (string, string, error) {
-	id := strings.TrimPrefix(req.URL.Path, "/")
-	if strings.Contains(id, "/") {
-		http.Error(res, "incorrect url", http.StatusBadRequest)
-		return "", "", errors.New("incorrect url")
+func GetLongURL(req *http.Request) (string, error) {
+	err := req.ParseForm()
+	if err != nil {
+		return "", errors.New("error reading body")
 	}
-	method := req.Method
-	if method != http.MethodPost && method != http.MethodGet {
-		http.Error(res, "incorrect method: only GET and POST allowed", http.StatusBadRequest)
-		return "", "", errors.New("incorrect method: only GET and POST allowed")
+	longURLStr := req.FormValue("url")
+	if longURLStr == "" {
+		return "", errors.New("didnt get url")
 	}
-	return id, method, nil
+	_, err = url.ParseRequestURI(longURLStr)
+	if err != nil {
+		errorText := fmt.Sprintf("got incorrect url to shorten: url=%v, err=%v", longURLStr, err.Error())
+		return "", errors.New(errorText)
+	}
+	return longURLStr, nil
 }

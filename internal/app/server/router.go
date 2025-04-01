@@ -5,6 +5,7 @@ import (
 )
 
 func (s *Server) setupRoutes() {
-	handler := handlers.NewHandler(s.repo)
-	s.router.HandleFunc("/", handler.MainHandler)
+	hs := handlers.NewHandler(s.repo)
+	s.router.Post("/", hs.SaveURL)
+	s.router.Get("/{id}", hs.GetLongURL)
 }
