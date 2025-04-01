@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"github.com/go-chi/chi/v5"
+	"github.com/stlesnik/url_shortener/cmd/config"
 	"github.com/stlesnik/url_shortener/internal/app/services"
 	"github.com/stlesnik/url_shortener/internal/app/storage"
 	"net/http"
@@ -9,10 +10,11 @@ import (
 
 type Handler struct {
 	repo storage.Repository
+	cfg  *config.Config
 }
 
-func NewHandler(repo storage.Repository) *Handler {
-	return &Handler{repo: repo}
+func NewHandler(repo storage.Repository, cfg *config.Config) *Handler {
+	return &Handler{repo: repo, cfg: cfg}
 }
 
 func (h *Handler) SaveURL(res http.ResponseWriter, req *http.Request) {
@@ -31,7 +33,7 @@ func (h *Handler) SaveURL(res http.ResponseWriter, req *http.Request) {
 		//generate response
 		res.Header().Set("Content-Type", "text/plain")
 		res.WriteHeader(http.StatusCreated)
-		res.Write([]byte(services.PrepareShortURL(urlHash, req)))
+		res.Write([]byte(services.PrepareShortURL(urlHash, h.cfg)))
 	} else {
 		http.Error(res, "Failed to save short url", http.StatusInternalServerError)
 	}

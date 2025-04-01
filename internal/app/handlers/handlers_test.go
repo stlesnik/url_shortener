@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"github.com/go-chi/chi/v5"
+	"github.com/stlesnik/url_shortener/cmd/config"
 	"github.com/stlesnik/url_shortener/internal/app/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,8 +15,9 @@ import (
 )
 
 func TestHandler_SaveURL(t *testing.T) {
+	cfg := &config.Config{BaseURL: "http://localhost:8000"}
 	repo := storage.NewInMemoryStorage()
-	handler := NewHandler(repo)
+	handler := NewHandler(repo, cfg)
 
 	type expected struct {
 		contentType string
@@ -34,7 +36,7 @@ func TestHandler_SaveURL(t *testing.T) {
 			expected: expected{
 				contentType: "text/plain",
 				statusCode:  http.StatusCreated,
-				body:        "http://example.com/_SGMGLQIsIM=",
+				body:        "http://localhost:8000/_SGMGLQIsIM=",
 			},
 		},
 		{
@@ -68,9 +70,10 @@ func TestHandler_SaveURL(t *testing.T) {
 }
 
 func TestHandler_GetLongURL(t *testing.T) {
+	cfg := &config.Config{BaseURL: "http://localhost:8000"} // Добавляем конфиг
 	repo := storage.NewInMemoryStorage()
 	repo.Save("_SGMGLQIsIM=", "http://mbrgaoyhv.yandex")
-	handler := NewHandler(repo)
+	handler := NewHandler(repo, cfg)
 
 	type expected struct {
 		statusCode int

@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/go-chi/chi/v5"
+	"github.com/stlesnik/url_shortener/cmd/config"
 	"github.com/stlesnik/url_shortener/internal/app/storage"
 	"net/http"
 )
@@ -9,19 +10,19 @@ import (
 type Server struct {
 	router chi.Router
 	repo   storage.Repository
-	port   string
+	cfg    *config.Config
 }
 
-func NewServer(repo storage.Repository, port string) *Server {
+func NewServer(repo storage.Repository, cfg *config.Config) *Server {
 	s := &Server{
 		router: chi.NewRouter(),
 		repo:   repo,
-		port:   port,
+		cfg:    cfg,
 	}
 	s.setupRoutes()
 	return s
 }
 
 func (s *Server) Start() error {
-	return http.ListenAndServe(s.port, s.router)
+	return http.ListenAndServe(s.cfg.ServerAddress, s.router)
 }

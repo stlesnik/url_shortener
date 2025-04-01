@@ -2,19 +2,10 @@ package services
 
 import (
 	"fmt"
-	"net/http"
+	"github.com/stlesnik/url_shortener/cmd/config"
 )
 
-func PrepareShortURL(urlHash string, r *http.Request) string {
-	scheme := "http"
-	if r.TLS != nil {
-		scheme = "https"
-	}
+func PrepareShortURL(urlHash string, cfg *config.Config) string {
+	return fmt.Sprintf("%s/%s", cfg.BaseURL, urlHash)
 
-	host := r.Host
-	if forwardedHost := r.Header.Get("X-Forwarded-Host"); forwardedHost != "" {
-		host = forwardedHost
-	}
-
-	return fmt.Sprintf("%s://%s/%s", scheme, host, urlHash)
 }
