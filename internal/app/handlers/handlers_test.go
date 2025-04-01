@@ -102,9 +102,8 @@ func TestHandler_processGetRequest(t *testing.T) {
 			handler.processGetRequest(w, tt.id)
 
 			require.Equal(t, tt.expected.statusCode, w.Code)
-			res := w.Result()
 			if tt.expected.statusCode == http.StatusTemporaryRedirect {
-				assert.Equal(t, tt.expected.location, res.Header.Get("Location"))
+				assert.Equal(t, tt.expected.location, w.Header().Get("Location"))
 			}
 		})
 	}
