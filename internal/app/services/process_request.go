@@ -3,16 +3,17 @@ package services
 import (
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 )
 
 func GetLongURL(req *http.Request) (string, error) {
-	err := req.ParseForm()
+	body, err := io.ReadAll(req.Body)
 	if err != nil {
 		return "", errors.New("error reading body")
 	}
-	longURLStr := req.FormValue("url")
+	longURLStr := string(body)
 	if longURLStr == "" {
 		return "", errors.New("didnt get url")
 	}

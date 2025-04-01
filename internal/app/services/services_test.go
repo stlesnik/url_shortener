@@ -3,7 +3,6 @@ package services
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -36,30 +35,30 @@ func TestGetLongURL(t *testing.T) {
 	}
 	tests := []struct {
 		name     string
-		body     io.Reader
+		longURL  string
 		expected expected
 	}{
 		{
 			name:     "good case",
-			body:     strings.NewReader(`url=http%3A%2F%2Fmbrgaoyhv.yandex`),
+			longURL:  "http://mbrgaoyhv.yandex",
 			expected: expected{longURLStr: "http://mbrgaoyhv.yandex", error: ""},
 		},
 		{
 			name:     "bad body",
-			body:     strings.NewReader(``),
+			longURL:  ``,
 			expected: expected{longURLStr: "", error: "didnt get url"},
 		},
 		{
 			name:     "bad url",
-			body:     strings.NewReader(`url=%3A%2F%2Fmbrgaoyhv.yandex%2F123%2F4%2F5"}`),
-			expected: expected{longURLStr: "", error: "got incorrect url to shorten: url=://mbrgaoyhv.yandex/123/4/5\"}, err=parse \"://mbrgaoyhv.yandex/123/4/5\\\"}\": missing protocol scheme"},
+			longURL:  "://mbrgaoyhv.yandex",
+			expected: expected{longURLStr: "", error: "got incorrect url to shorten: url=://mbrgaoyhv.yandex, err=parse \"://mbrgaoyhv.yandex\": missing protocol scheme"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodPost, "/", tt.body)
-			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tt.longURL))
+			req.Header.Add("Content-Type", "text/plain")
 
 			longURLStr, err := GetLongURL(req)
 

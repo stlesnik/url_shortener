@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"strings"
 )
@@ -13,7 +12,7 @@ import (
 func main() {
 	endpoint := "http://localhost:8080/"
 	// контейнер данных для запроса
-	data := url.Values{}
+	//data := url.Values{}
 	// приглашение в консоли
 	fmt.Println("Введите длинный URL")
 	// открываем потоковое чтение из консоли
@@ -25,18 +24,19 @@ func main() {
 	}
 	long = strings.TrimSuffix(long, "\n")
 	// заполняем контейнер данными
-	data.Set("url", long)
+	//data.Set("url", long)
 	// добавляем HTTP-клиент
 	client := &http.Client{}
 	// пишем запрос
 	// запрос методом POST должен, помимо заголовков, содержать тело
 	// тело должно быть источником потокового чтения io.Reader
-	request, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(data.Encode()))
+	//request, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(data.Encode()))
+	request, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(long))
 	if err != nil {
 		panic(err)
 	}
 	// в заголовках запроса указываем кодировку
-	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	request.Header.Add("Content-Type", "text/plain")
 	// отправляем запрос и получаем ответ
 	response, err := client.Do(request)
 	if err != nil {
