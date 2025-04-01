@@ -1,9 +1,9 @@
 package handlers
 
 import (
+	"fmt"
 	"github.com/stlesnik/url_shortener/internal/app/services"
 	"github.com/stlesnik/url_shortener/internal/app/storage"
-	"io"
 	"net/http"
 	"net/url"
 )
@@ -29,15 +29,16 @@ func (h *Handler) MainHandler(res http.ResponseWriter, req *http.Request) {
 }
 
 func (h *Handler) processPostRequest(res http.ResponseWriter, req *http.Request) {
-	longURL, err := io.ReadAll(req.Body)
-	longURLStr := string(longURL)
+	err := req.ParseForm()
 	if err != nil {
 		http.Error(res, "Error reading body", http.StatusBadRequest)
 		return
 	}
+	longURLStr := req.FormValue("url")
 	_, err = url.ParseRequestURI(longURLStr)
 	if err != nil {
-		http.Error(res, "Got incorrect url to shorten", http.StatusBadRequest)
+		errorText := fmt.Sprintf("Got incorrect url to shorten: url=%v, err=%v", longURLStr, err.Error())
+		http.Error(res, errorText, http.StatusBadRequest)
 		return
 	}
 

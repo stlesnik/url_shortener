@@ -1,12 +1,14 @@
 package handlers
 
 import (
+	"fmt"
 	"github.com/stlesnik/url_shortener/internal/app/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 )
@@ -22,13 +24,13 @@ func TestHandler_processPostRequest(t *testing.T) {
 	}
 
 	tests := []struct {
-		name        string
-		requestBody string
-		expected    expected
+		name     string
+		longURL  string
+		expected expected
 	}{
 		{
-			name:        "valid url",
-			requestBody: "http://mbrgaoyhv.yandex",
+			name:    "valid url",
+			longURL: "http://mbrgaoyhv.yandex",
 			expected: expected{
 				contentType: "text/plain",
 				statusCode:  http.StatusCreated,
@@ -36,8 +38,8 @@ func TestHandler_processPostRequest(t *testing.T) {
 			},
 		},
 		{
-			name:        "invalid url",
-			requestBody: "invalid-url",
+			name:    "invalid url",
+			longURL: "invalid-url",
 			expected: expected{
 				contentType: "text/plain",
 				statusCode:  http.StatusBadRequest,
@@ -47,7 +49,12 @@ func TestHandler_processPostRequest(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tt.requestBody))
+			//prepare body
+			data := url.Values{}
+			data.Set("url", tt.longURL)
+			fmt.Println(data)
+			r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(data.Encode()))
+			r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 			w := httptest.NewRecorder()
 			handler.processPostRequest(w, r)
 
