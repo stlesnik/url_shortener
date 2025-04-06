@@ -28,7 +28,11 @@ func (h *Handler) SaveURL(res http.ResponseWriter, req *http.Request) {
 		//generate response
 		res.Header().Set("Content-Type", "text/plain")
 		res.WriteHeader(http.StatusCreated)
-		res.Write([]byte(shortURL))
+		_, err := res.Write([]byte(shortURL))
+		if err != nil {
+			http.Error(res, "Failed to write short url into response", http.StatusInternalServerError)
+			return
+		}
 	} else {
 		http.Error(res, "Failed to save short url", http.StatusInternalServerError)
 		return

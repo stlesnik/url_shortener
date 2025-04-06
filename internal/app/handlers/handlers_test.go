@@ -65,7 +65,10 @@ func TestHandler_SaveURL(t *testing.T) {
 
 				shortURL, _ := io.ReadAll(res.Body)
 				assert.Equal(t, tt.expected.body, string(shortURL))
-				res.Body.Close()
+				err := res.Body.Close()
+				if err != nil {
+					panic(err)
+				}
 			}
 		})
 	}
@@ -74,7 +77,7 @@ func TestHandler_SaveURL(t *testing.T) {
 func TestHandler_GetLongURL(t *testing.T) {
 	cfg := &config.Config{BaseURL: "http://localhost:8000"} // Добавляем конфиг
 	repo := storage.NewInMemoryStorage()
-	repo.Save("_SGMGLQIsIM=", "http://mbrgaoyhv.yandex")
+	_ = repo.Save("_SGMGLQIsIM=", "http://mbrgaoyhv.yandex")
 	service := services.NewUrlShortenerService(repo, cfg)
 	handler := NewHandler(service)
 
