@@ -2,10 +2,12 @@ package server
 
 import (
 	"github.com/stlesnik/url_shortener/internal/app/handlers"
+	"github.com/stlesnik/url_shortener/internal/app/services"
 )
 
 func (s *Server) setupRoutes() {
-	hs := handlers.NewHandler(s.repo, s.cfg)
+	service := services.NewUrlShortenerService(s.repo, s.cfg)
+	hs := handlers.NewHandler(service)
 	s.router.Post("/", hs.SaveURL)
 	s.router.Get("/{id}", hs.GetLongURL)
 }

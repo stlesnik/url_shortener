@@ -8,7 +8,7 @@ import (
 	"net/url"
 )
 
-func GetLongURL(req *http.Request) (string, error) {
+func GetLongURLFromReq(req *http.Request) (string, error) {
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
 		return "", errors.New("error reading body")

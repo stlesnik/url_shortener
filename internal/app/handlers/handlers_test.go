@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/go-chi/chi/v5"
 	"github.com/stlesnik/url_shortener/cmd/config"
+	"github.com/stlesnik/url_shortener/internal/app/services"
 	"github.com/stlesnik/url_shortener/internal/app/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,7 +18,8 @@ import (
 func TestHandler_SaveURL(t *testing.T) {
 	cfg := &config.Config{BaseURL: "http://localhost:8000"}
 	repo := storage.NewInMemoryStorage()
-	handler := NewHandler(repo, cfg)
+	service := services.NewUrlShortenerService(repo, cfg)
+	handler := NewHandler(service)
 
 	type expected struct {
 		contentType string
@@ -73,7 +75,8 @@ func TestHandler_GetLongURL(t *testing.T) {
 	cfg := &config.Config{BaseURL: "http://localhost:8000"} // Добавляем конфиг
 	repo := storage.NewInMemoryStorage()
 	repo.Save("_SGMGLQIsIM=", "http://mbrgaoyhv.yandex")
-	handler := NewHandler(repo, cfg)
+	service := services.NewUrlShortenerService(repo, cfg)
+	handler := NewHandler(service)
 
 	type expected struct {
 		statusCode int
