@@ -17,7 +17,7 @@ import (
 
 func TestHandler_SaveURL(t *testing.T) {
 	cfg := &config.Config{BaseURL: "http://localhost:8000"}
-	repo := storage.NewInMemoryStorage()
+	repo := storage.NewInMemoryRepository()
 	service := services.NewUrlShortenerService(repo, cfg)
 	handler := NewHandler(service)
 
@@ -76,7 +76,7 @@ func TestHandler_SaveURL(t *testing.T) {
 
 func TestHandler_GetLongURL(t *testing.T) {
 	cfg := &config.Config{BaseURL: "http://localhost:8000"} // Добавляем конфиг
-	repo := storage.NewInMemoryStorage()
+	repo := storage.NewInMemoryRepository()
 	_ = repo.Save("_SGMGLQIsIM=", "http://mbrgaoyhv.yandex")
 	service := services.NewUrlShortenerService(repo, cfg)
 	handler := NewHandler(service)

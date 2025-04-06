@@ -9,7 +9,7 @@ import (
 
 func main() {
 	cfg := config.NewConfig()
-	repo := storage.NewInMemoryStorage()
+	repo := storage.NewInMemoryRepository()
 	srv := server.NewServer(repo, cfg)
 
 	log.Printf("Сервер запущен на %s", cfg.ServerAddress)
