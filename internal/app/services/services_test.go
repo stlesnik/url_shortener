@@ -60,7 +60,7 @@ func TestGetLongURL(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tt.longURL))
 			req.Header.Add("Content-Type", "text/plain")
 
-			longURLStr, err := GetLongURL(req)
+			longURLStr, err := GetLongURLFromReq(req)
 
 			if tt.expected.error != "" {
 				require.EqualError(t, err, tt.expected.error)
