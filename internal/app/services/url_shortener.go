@@ -12,16 +12,16 @@ func PrepareShortURL(urlHash string, cfg *config.Config) string {
 
 }
 
-type UrlShortenerService struct {
+type URLShortenerService struct {
 	repo repository.Repository
 	cfg  *config.Config
 }
 
-func NewUrlShortenerService(repo repository.Repository, cfg *config.Config) *UrlShortenerService {
-	return &UrlShortenerService{repo, cfg}
+func NewURLShortenerService(repo repository.Repository, cfg *config.Config) *URLShortenerService {
+	return &URLShortenerService{repo, cfg}
 }
 
-func (s *UrlShortenerService) CreateShortURL(longURL string) (string, error) {
+func (s *URLShortenerService) CreateShortURL(longURL string) (string, error) {
 	urlHash := GenerateShortKey(longURL)
 	err := s.repo.Save(urlHash, longURL)
 	if err != nil {
@@ -30,7 +30,7 @@ func (s *UrlShortenerService) CreateShortURL(longURL string) (string, error) {
 	return PrepareShortURL(urlHash, s.cfg), nil
 }
 
-func (s *UrlShortenerService) GetLongURLFromDB(URLHash string) (string, error) {
+func (s *URLShortenerService) GetLongURLFromDB(URLHash string) (string, error) {
 	longURL, exists := s.repo.Get(URLHash)
 	if !exists {
 		return "", errors.New("not found")

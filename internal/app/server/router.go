@@ -6,7 +6,7 @@ import (
 )
 
 func (s *Server) setupRoutes() {
-	service := services.NewUrlShortenerService(s.repo, s.cfg)
+	service := services.NewURLShortenerService(s.repo, s.cfg)
 	hs := handlers.NewHandler(service)
 	s.router.Post("/", hs.SaveURL)
 	s.router.Get("/{id}", hs.GetLongURL)

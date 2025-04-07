@@ -18,7 +18,7 @@ import (
 func TestHandler_getLongURLFromReq(t *testing.T) {
 	cfg := &config.Config{BaseURL: "http://localhost:8000"}
 	repo := repository.NewInMemoryRepository()
-	service := services.NewUrlShortenerService(repo, cfg)
+	service := services.NewURLShortenerService(repo, cfg)
 	handler := NewHandler(service)
 
 	type expected struct {
@@ -67,7 +67,7 @@ func TestHandler_getLongURLFromReq(t *testing.T) {
 func TestHandler_SaveURL(t *testing.T) {
 	cfg := &config.Config{BaseURL: "http://localhost:8000"}
 	repo := repository.NewInMemoryRepository()
-	service := services.NewUrlShortenerService(repo, cfg)
+	service := services.NewURLShortenerService(repo, cfg)
 	handler := NewHandler(service)
 
 	type expected struct {
@@ -127,7 +127,7 @@ func TestHandler_GetLongURL(t *testing.T) {
 	cfg := &config.Config{BaseURL: "http://localhost:8000"} // Добавляем конфиг
 	repo := repository.NewInMemoryRepository()
 	_ = repo.Save("_SGMGLQIsIM=", "http://mbrgaoyhv.yandex")
-	service := services.NewUrlShortenerService(repo, cfg)
+	service := services.NewURLShortenerService(repo, cfg)
 	handler := NewHandler(service)
 
 	type expected struct {

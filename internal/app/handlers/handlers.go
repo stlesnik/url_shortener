@@ -11,10 +11,10 @@ import (
 )
 
 type Handler struct {
-	service *services.UrlShortenerService // Вместо прямого доступа к repo и cfg
+	service *services.URLShortenerService // Вместо прямого доступа к repo и cfg
 }
 
-func NewHandler(service *services.UrlShortenerService) *Handler {
+func NewHandler(service *services.URLShortenerService) *Handler {
 	return &Handler{service: service}
 }
 
