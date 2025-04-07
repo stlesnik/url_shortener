@@ -24,8 +24,8 @@ func (s *InMemoryRepository) Save(short string, long string) error {
 }
 
 func (s *InMemoryRepository) Get(short string) (string, bool) {
-	s.mu.Lock()
+	s.mu.RLock()
 	long, exists := s.data[short]
-	s.mu.Unlock()
+	s.mu.RUnlock()
 	return long, exists
 }
