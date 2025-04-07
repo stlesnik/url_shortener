@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/stlesnik/url_shortener/cmd/config"
-	"github.com/stlesnik/url_shortener/internal/app/storage"
+	"github.com/stlesnik/url_shortener/internal/app/repository"
 )
 
 func PrepareShortURL(urlHash string, cfg *config.Config) string {
@@ -13,11 +13,11 @@ func PrepareShortURL(urlHash string, cfg *config.Config) string {
 }
 
 type UrlShortenerService struct {
-	repo storage.Repository
+	repo repository.Repository
 	cfg  *config.Config
 }
 
-func NewUrlShortenerService(repo storage.Repository, cfg *config.Config) *UrlShortenerService {
+func NewUrlShortenerService(repo repository.Repository, cfg *config.Config) *UrlShortenerService {
 	return &UrlShortenerService{repo, cfg}
 }
 

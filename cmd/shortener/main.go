@@ -2,14 +2,14 @@ package main
 
 import (
 	"github.com/stlesnik/url_shortener/cmd/config"
+	"github.com/stlesnik/url_shortener/internal/app/repository"
 	"github.com/stlesnik/url_shortener/internal/app/server"
-	"github.com/stlesnik/url_shortener/internal/app/storage"
 	"log"
 )
 
 func main() {
 	cfg := config.NewConfig()
-	repo := storage.NewInMemoryRepository()
+	repo := repository.NewInMemoryRepository()
 	srv := server.NewServer(repo, cfg)
 
 	log.Printf("Сервер запущен на %s", cfg.ServerAddress)

@@ -1,4 +1,6 @@
-package storage
+package repository
+
+import "sync"
 
 type Repository interface {
 	Save(shortURL string, longURLStr string) error
@@ -7,6 +9,7 @@ type Repository interface {
 
 type InMemoryRepository struct {
 	data map[string]string
+	mu   sync.RWMutex
 }
 
 func NewInMemoryRepository() *InMemoryRepository {
@@ -14,11 +17,15 @@ func NewInMemoryRepository() *InMemoryRepository {
 }
 
 func (s *InMemoryRepository) Save(short string, long string) error {
+	s.mu.Lock()
 	s.data[short] = long
+	s.mu.Unlock()
 	return nil
 }
 
 func (s *InMemoryRepository) Get(short string) (string, bool) {
+	s.mu.Lock()
 	long, exists := s.data[short]
+	s.mu.Unlock()
 	return long, exists
 }

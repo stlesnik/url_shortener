@@ -3,17 +3,17 @@ package server
 import (
 	"github.com/go-chi/chi/v5"
 	"github.com/stlesnik/url_shortener/cmd/config"
-	"github.com/stlesnik/url_shortener/internal/app/storage"
+	"github.com/stlesnik/url_shortener/internal/app/repository"
 	"net/http"
 )
 
 type Server struct {
 	router chi.Router
-	repo   storage.Repository
+	repo   repository.Repository
 	cfg    *config.Config
 }
 
-func NewServer(repo storage.Repository, cfg *config.Config) *Server {
+func NewServer(repo repository.Repository, cfg *config.Config) *Server {
 	s := &Server{
 		router: chi.NewRouter(),
 		repo:   repo,

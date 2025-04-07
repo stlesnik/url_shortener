@@ -4,8 +4,8 @@ import (
 	"context"
 	"github.com/go-chi/chi/v5"
 	"github.com/stlesnik/url_shortener/cmd/config"
+	"github.com/stlesnik/url_shortener/internal/app/repository"
 	"github.com/stlesnik/url_shortener/internal/app/services"
-	"github.com/stlesnik/url_shortener/internal/app/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
@@ -17,7 +17,7 @@ import (
 
 func TestHandler_SaveURL(t *testing.T) {
 	cfg := &config.Config{BaseURL: "http://localhost:8000"}
-	repo := storage.NewInMemoryRepository()
+	repo := repository.NewInMemoryRepository()
 	service := services.NewUrlShortenerService(repo, cfg)
 	handler := NewHandler(service)
 
@@ -76,7 +76,7 @@ func TestHandler_SaveURL(t *testing.T) {
 
 func TestHandler_GetLongURL(t *testing.T) {
 	cfg := &config.Config{BaseURL: "http://localhost:8000"} // Добавляем конфиг
-	repo := storage.NewInMemoryRepository()
+	repo := repository.NewInMemoryRepository()
 	_ = repo.Save("_SGMGLQIsIM=", "http://mbrgaoyhv.yandex")
 	service := services.NewUrlShortenerService(repo, cfg)
 	handler := NewHandler(service)
