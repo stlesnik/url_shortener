@@ -18,14 +18,14 @@ func NewInMemoryRepository() *InMemoryRepository {
 
 func (s *InMemoryRepository) Save(short string, long string) error {
 	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.data[short] = long
-	s.mu.Unlock()
 	return nil
 }
 
 func (s *InMemoryRepository) Get(short string) (string, bool) {
 	s.mu.RLock()
+	defer s.mu.RUnlock()
 	long, exists := s.data[short]
-	s.mu.RUnlock()
 	return long, exists
 }
