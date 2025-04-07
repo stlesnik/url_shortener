@@ -8,12 +8,15 @@ import (
 )
 
 func main() {
-	cfg := config.NewConfig()
+	cfg, err := config.NewConfig()
+	if err != nil {
+		panic(err)
+	}
 	repo := repository.NewInMemoryRepository()
 	srv := server.NewServer(repo, cfg)
 
 	log.Printf("Сервер запущен на %s", cfg.ServerAddress)
-	err := srv.Start()
+	err = srv.Start()
 	if err != nil {
 		panic(err)
 	}

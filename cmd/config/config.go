@@ -2,30 +2,33 @@ package config
 
 import (
 	"flag"
-	"os"
+	"github.com/caarlos0/env/v6"
 )
 
 type Config struct {
-	ServerAddress string
-	BaseURL       string
+	ServerAddress string `env:"SERVER_ADDRESS"`
+	BaseURL       string `env:"BASE_URL"`
 }
 
-func NewConfig() *Config {
+func NewConfig() (*Config, error) {
+	cfg := &Config{}
+
 	defaultAddress := "localhost:8080"
 	defaultBaseURL := "http://localhost:8080"
+
+	if err := env.Parse(cfg); err != nil {
+		return nil, err
+	}
 
 	serverAddrFlag := flag.String("a", "", "Address to run the server")
 	baseURLFlag := flag.String("b", "", "Base URL for shortened links")
 
 	flag.Parse()
 
-	serverAddrEnv := os.Getenv("SERVER_ADDRESS")
-	baseURLEnv := os.Getenv("BASE_URL")
-
 	return &Config{
-		ServerAddress: chooseValue(serverAddrEnv, *serverAddrFlag, defaultAddress),
-		BaseURL:       chooseValue(baseURLEnv, *baseURLFlag, defaultBaseURL),
-	}
+		ServerAddress: chooseValue(cfg.ServerAddress, *serverAddrFlag, defaultAddress),
+		BaseURL:       chooseValue(cfg.BaseURL, *baseURLFlag, defaultBaseURL),
+	}, nil
 }
 
 func chooseValue(env, flag, def string) string {
