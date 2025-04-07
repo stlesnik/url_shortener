@@ -1,9 +1,13 @@
 package handlers
 
 import (
+	"errors"
+	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/stlesnik/url_shortener/internal/app/services"
+	"io"
 	"net/http"
+	"net/url"
 )
 
 type Handler struct {
@@ -14,9 +18,26 @@ func NewHandler(service *services.UrlShortenerService) *Handler {
 	return &Handler{service: service}
 }
 
+func (h *Handler) getLongURLFromReq(req *http.Request) (string, error) {
+	body, err := io.ReadAll(req.Body)
+	if err != nil {
+		return "", errors.New("error reading body")
+	}
+	longURLStr := string(body)
+	if longURLStr == "" {
+		return "", errors.New("didnt get url")
+	}
+	_, err = url.ParseRequestURI(longURLStr)
+	if err != nil {
+		errorText := fmt.Sprintf("got incorrect url to shorten: url=%v, err=%v", longURLStr, err.Error())
+		return "", errors.New(errorText)
+	}
+	return longURLStr, nil
+}
+
 func (h *Handler) SaveURL(res http.ResponseWriter, req *http.Request) {
 	//get long url from body
-	longURLStr, err := services.GetLongURLFromReq(req)
+	longURLStr, err := h.getLongURLFromReq(req)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return

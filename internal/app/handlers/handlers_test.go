@@ -15,6 +15,55 @@ import (
 	"testing"
 )
 
+func TestHandler_getLongURLFromReq(t *testing.T) {
+	cfg := &config.Config{BaseURL: "http://localhost:8000"}
+	repo := repository.NewInMemoryRepository()
+	service := services.NewUrlShortenerService(repo, cfg)
+	handler := NewHandler(service)
+
+	type expected struct {
+		longURLStr string
+		error      string
+	}
+	tests := []struct {
+		name     string
+		longURL  string
+		expected expected
+	}{
+		{
+			name:     "good case",
+			longURL:  "http://mbrgaoyhv.yandex",
+			expected: expected{longURLStr: "http://mbrgaoyhv.yandex", error: ""},
+		},
+		{
+			name:     "bad body",
+			longURL:  ``,
+			expected: expected{longURLStr: "", error: "didnt get url"},
+		},
+		{
+			name:     "bad url",
+			longURL:  "://mbrgaoyhv.yandex",
+			expected: expected{longURLStr: "", error: "got incorrect url to shorten: url=://mbrgaoyhv.yandex, err=parse \"://mbrgaoyhv.yandex\": missing protocol scheme"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tt.longURL))
+			req.Header.Add("Content-Type", "text/plain")
+
+			longURLStr, err := handler.getLongURLFromReq(req)
+
+			if tt.expected.error != "" {
+				require.EqualError(t, err, tt.expected.error)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tt.expected.longURLStr, longURLStr)
+			}
+		})
+	}
+}
+
 func TestHandler_SaveURL(t *testing.T) {
 	cfg := &config.Config{BaseURL: "http://localhost:8000"}
 	repo := repository.NewInMemoryRepository()
