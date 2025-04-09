@@ -16,27 +16,14 @@ func NewConfig() (*Config, error) {
 	defaultAddress := "localhost:8080"
 	defaultBaseURL := "http://localhost:8080"
 
+	flag.StringVar(&cfg.ServerAddress, "a", defaultAddress, "Address to run the server")
+	flag.StringVar(&cfg.BaseURL, "b", defaultBaseURL, "Base URL for shortened links")
+
+	flag.Parse()
+
 	if err := env.Parse(cfg); err != nil {
 		return nil, err
 	}
 
-	serverAddrFlag := flag.String("a", "", "Address to run the server")
-	baseURLFlag := flag.String("b", "", "Base URL for shortened links")
-
-	flag.Parse()
-
-	return &Config{
-		ServerAddress: chooseValue(cfg.ServerAddress, *serverAddrFlag, defaultAddress),
-		BaseURL:       chooseValue(cfg.BaseURL, *baseURLFlag, defaultBaseURL),
-	}, nil
-}
-
-func chooseValue(env, flag, def string) string {
-	if env != "" {
-		return env
-	}
-	if flag != "" {
-		return flag
-	}
-	return def
+	return cfg, nil
 }
