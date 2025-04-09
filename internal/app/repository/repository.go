@@ -2,11 +2,6 @@ package repository
 
 import "sync"
 
-type Repository interface {
-	Save(shortURL string, longURLStr string) error
-	Get(shortURL string) (string, bool)
-}
-
 type InMemoryRepository struct {
 	data map[string]string
 	mu   sync.RWMutex
