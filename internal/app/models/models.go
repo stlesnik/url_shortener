@@ -1,9 +1,9 @@
 package models
 
-type ApiRequestPrepareShURL struct {
+type APIRequestPrepareShURL struct {
 	LongURL string `json:"url"`
 }
 
-type ApiResponsePrepareShURL struct {
+type APIResponsePrepareShURL struct {
 	ShortURL string `json:"result"`
 }

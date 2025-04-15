@@ -78,7 +78,7 @@ func (h *Handler) GetLongURL(res http.ResponseWriter, req *http.Request) {
 
 func (h *Handler) ApiPrepareShortURL(res http.ResponseWriter, req *http.Request) {
 	logger.Sugaarz.Debugw("got ApiPrepareShortURL request")
-	var apiReq models.ApiRequestPrepareShURL
+	var apiReq models.APIRequestPrepareShURL
 	err := json.NewDecoder(req.Body).Decode(&apiReq)
 	if err != nil {
 		logger.Sugaarz.Errorw("error decoding body", "err", err)
@@ -93,7 +93,7 @@ func (h *Handler) ApiPrepareShortURL(res http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	apiResp := models.ApiResponsePrepareShURL{
+	apiResp := models.APIResponsePrepareShURL{
 		ShortURL: shortURL,
 	}
 	res.Header().Set("Content-Type", "application/json")

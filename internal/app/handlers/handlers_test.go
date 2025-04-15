@@ -211,10 +211,10 @@ func TestHandler_ApiPrepareShortURL(t *testing.T) {
 			require.Equal(t, tt.expectedCode, w.Code)
 			res := w.Result()
 			if tt.expectedCode == http.StatusOK {
-				resJsonBytes, err := io.ReadAll(res.Body)
+				resJSONBytes, err := io.ReadAll(res.Body)
 				require.NoError(t, err)
 
-				resJson := string(resJsonBytes)
+				resJson := string(resJSONBytes)
 				assert.JSONEq(t, tt.expectedBody, resJson)
 			}
 			err := res.Body.Close()
