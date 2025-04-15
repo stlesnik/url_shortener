@@ -197,7 +197,7 @@ func TestHandler_ApiPrepareShortURL(t *testing.T) {
 		{
 			name:         "Good json case",
 			body:         `{"url":"https://vk.com"}`,
-			expectedCode: 200,
+			expectedCode: 201,
 			expectedBody: `{"result":"http://localhost:8000/ymMooIzfwh4="}`,
 		},
 	}
