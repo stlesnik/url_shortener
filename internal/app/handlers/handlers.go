@@ -97,7 +97,7 @@ func (h *Handler) APIPrepareShortURL(res http.ResponseWriter, req *http.Request)
 		ShortURL: shortURL,
 	}
 	res.Header().Set("Content-Type", "application/json")
-	res.WriteHeader(http.StatusOK)
+	res.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(res).Encode(apiResp); err != nil {
 		logger.Sugaarz.Errorw("error encoding body", "err", err)
 		http.Error(res, "Failed to encode body", http.StatusInternalServerError)

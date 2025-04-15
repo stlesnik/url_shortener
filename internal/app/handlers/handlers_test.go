@@ -210,7 +210,7 @@ func TestHandler_ApiPrepareShortURL(t *testing.T) {
 
 			require.Equal(t, tt.expectedCode, w.Code)
 			res := w.Result()
-			if tt.expectedCode == http.StatusOK {
+			if tt.expectedCode == http.StatusCreated {
 				resJSONBytes, err := io.ReadAll(res.Body)
 				require.NoError(t, err)
 
