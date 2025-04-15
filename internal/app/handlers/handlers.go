@@ -76,8 +76,8 @@ func (h *Handler) GetLongURL(res http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (h *Handler) ApiPrepareShortURL(res http.ResponseWriter, req *http.Request) {
-	logger.Sugaarz.Debugw("got ApiPrepareShortURL request")
+func (h *Handler) APIPrepareShortURL(res http.ResponseWriter, req *http.Request) {
+	logger.Sugaarz.Debugw("got APIPrepareShortURL request")
 	var apiReq models.APIRequestPrepareShURL
 	err := json.NewDecoder(req.Body).Decode(&apiReq)
 	if err != nil {
@@ -103,5 +103,5 @@ func (h *Handler) ApiPrepareShortURL(res http.ResponseWriter, req *http.Request)
 		http.Error(res, "Failed to encode body", http.StatusInternalServerError)
 		return
 	}
-	logger.Sugaarz.Debugw("sent ApiPrepareShortURL response")
+	logger.Sugaarz.Debugw("sent APIPrepareShortURL response")
 }

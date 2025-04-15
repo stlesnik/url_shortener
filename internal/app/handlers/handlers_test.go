@@ -206,7 +206,7 @@ func TestHandler_ApiPrepareShortURL(t *testing.T) {
 			r := httptest.NewRequest(http.MethodPost, "/api/shorten", strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
 			w := httptest.NewRecorder()
-			handler.ApiPrepareShortURL(w, r)
+			handler.APIPrepareShortURL(w, r)
 
 			require.Equal(t, tt.expectedCode, w.Code)
 			res := w.Result()
@@ -214,8 +214,8 @@ func TestHandler_ApiPrepareShortURL(t *testing.T) {
 				resJSONBytes, err := io.ReadAll(res.Body)
 				require.NoError(t, err)
 
-				resJson := string(resJSONBytes)
-				assert.JSONEq(t, tt.expectedBody, resJson)
+				resJSON := string(resJSONBytes)
+				assert.JSONEq(t, tt.expectedBody, resJSON)
 			}
 			err := res.Body.Close()
 			require.NoError(t, err)
