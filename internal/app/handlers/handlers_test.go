@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/go-chi/chi/v5"
 	"github.com/stlesnik/url_shortener/cmd/config"
+	"github.com/stlesnik/url_shortener/cmd/logger"
 	"github.com/stlesnik/url_shortener/internal/app/repository"
 	"github.com/stlesnik/url_shortener/internal/app/services"
 	"github.com/stretchr/testify/assert"
@@ -16,6 +17,7 @@ import (
 )
 
 func TestHandler_getLongURLFromReq(t *testing.T) {
+	logger.InitLogger()
 	cfg := &config.Config{BaseURL: "http://localhost:8000"}
 	repo := repository.NewInMemoryRepository()
 	service := services.NewURLShortenerService(repo, cfg)
@@ -65,6 +67,7 @@ func TestHandler_getLongURLFromReq(t *testing.T) {
 }
 
 func TestHandler_SaveURL(t *testing.T) {
+	logger.InitLogger()
 	cfg := &config.Config{BaseURL: "http://localhost:8000"}
 	repo := repository.NewInMemoryRepository()
 	service := services.NewURLShortenerService(repo, cfg)
@@ -124,6 +127,7 @@ func TestHandler_SaveURL(t *testing.T) {
 }
 
 func TestHandler_GetLongURL(t *testing.T) {
+	logger.InitLogger()
 	cfg := &config.Config{BaseURL: "http://localhost:8000"} // Добавляем конфиг
 	repo := repository.NewInMemoryRepository()
 	_ = repo.Save("_SGMGLQIsIM=", "http://mbrgaoyhv.yandex")
@@ -173,6 +177,48 @@ func TestHandler_GetLongURL(t *testing.T) {
 			if tt.expected.statusCode == http.StatusTemporaryRedirect {
 				assert.Equal(t, tt.expected.location, w.Header().Get("Location"))
 			}
+		})
+	}
+}
+
+func TestHandler_ApiPrepareShortURL(t *testing.T) {
+	logger.InitLogger()
+	cfg := &config.Config{BaseURL: "http://localhost:8000"}
+	repo := repository.NewInMemoryRepository()
+	service := services.NewURLShortenerService(repo, cfg)
+	handler := NewHandler(service)
+
+	tests := []struct {
+		name         string
+		body         string
+		expectedCode int
+		expectedBody string
+	}{
+		{
+			name:         "Good json case",
+			body:         `{"url":"https://vk.com"}`,
+			expectedCode: 200,
+			expectedBody: `{"result":"http://localhost:8000/ymMooIzfwh4="}`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodPost, "/api/shorten", strings.NewReader(tt.body))
+			r.Header.Add("Content-Type", "application/json")
+			w := httptest.NewRecorder()
+			handler.ApiPrepareShortURL(w, r)
+
+			require.Equal(t, tt.expectedCode, w.Code)
+			res := w.Result()
+			if tt.expectedCode == http.StatusOK {
+				resJsonBytes, err := io.ReadAll(res.Body)
+				require.NoError(t, err)
+
+				resJson := string(resJsonBytes)
+				assert.JSONEq(t, tt.expectedBody, resJson)
+			}
+			err := res.Body.Close()
+			require.NoError(t, err)
 		})
 	}
 }

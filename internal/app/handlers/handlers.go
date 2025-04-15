@@ -1,9 +1,12 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	"github.com/stlesnik/url_shortener/cmd/logger"
+	"github.com/stlesnik/url_shortener/internal/app/models"
 	"github.com/stlesnik/url_shortener/internal/app/services"
 	"io"
 	"net/http"
@@ -43,21 +46,22 @@ func (h *Handler) SaveURL(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	//generate and save short url
-	shortURL, err := h.service.CreateShortURL(longURLStr)
-
-	if err == nil {
-		//generate response
-		res.Header().Set("Content-Type", "text/plain")
-		res.WriteHeader(http.StatusCreated)
-		_, err := res.Write([]byte(shortURL))
-		if err != nil {
-			http.Error(res, "Failed to write short url into response", http.StatusInternalServerError)
-			return
-		}
-	} else {
-		http.Error(res, "Failed to save short url", http.StatusInternalServerError)
+	shortURL, errText := h.service.CreateSavePrepareShortURL(longURLStr)
+	if errText != "" {
+		logger.Sugaarz.Errorw(errText)
+		http.Error(res, errText, http.StatusInternalServerError)
 		return
 	}
+
+	//generate response
+	res.Header().Set("Content-Type", "text/plain")
+	res.WriteHeader(http.StatusCreated)
+	_, err = res.Write([]byte(shortURL))
+	if err != nil {
+		http.Error(res, "Failed to write short url into response", http.StatusInternalServerError)
+		return
+	}
+
 }
 
 func (h *Handler) GetLongURL(res http.ResponseWriter, req *http.Request) {
@@ -70,4 +74,34 @@ func (h *Handler) GetLongURL(res http.ResponseWriter, req *http.Request) {
 		http.Error(res, "Short url not found", http.StatusBadRequest)
 		return
 	}
+}
+
+func (h *Handler) ApiPrepareShortURL(res http.ResponseWriter, req *http.Request) {
+	logger.Sugaarz.Debugw("got ApiPrepareShortURL request")
+	var apiReq models.ApiRequestPrepareShURL
+	err := json.NewDecoder(req.Body).Decode(&apiReq)
+	if err != nil {
+		logger.Sugaarz.Errorw("error decoding body", "err", err)
+		http.Error(res, "Failed to decode body", http.StatusInternalServerError)
+		return
+	}
+
+	shortURL, errText := h.service.CreateSavePrepareShortURL(apiReq.LongURL)
+	if errText != "" {
+		logger.Sugaarz.Errorw(errText)
+		http.Error(res, errText, http.StatusInternalServerError)
+		return
+	}
+
+	apiResp := models.ApiResponsePrepareShURL{
+		ShortURL: shortURL,
+	}
+	res.Header().Set("Content-Type", "application/json")
+	res.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(res).Encode(apiResp); err != nil {
+		logger.Sugaarz.Errorw("error encoding body", "err", err)
+		http.Error(res, "Failed to encode body", http.StatusInternalServerError)
+		return
+	}
+	logger.Sugaarz.Debugw("sent ApiPrepareShortURL response")
 }

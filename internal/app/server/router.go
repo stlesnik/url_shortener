@@ -11,4 +11,5 @@ func (s *Server) setupRoutes() {
 	hs := handlers.NewHandler(service)
 	s.router.Post("/", middleware.WithLogging(hs.SaveURL))
 	s.router.Get("/{id}", middleware.WithLogging(hs.GetLongURL))
+	s.router.Post("/api/shorten", middleware.WithLogging(hs.ApiPrepareShortURL))
 }
