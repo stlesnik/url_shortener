@@ -42,14 +42,14 @@ func (h *Handler) SaveURL(res http.ResponseWriter, req *http.Request) {
 	//get long url from body
 	longURLStr, err := h.getLongURLFromReq(req)
 	if err != nil {
-		http.Error(res, err.Error(), http.StatusBadRequest)
+		WriteError(res, err.Error(), http.StatusBadRequest)
 		return
 	}
 	//generate and save short url
 	shortURL, errText := h.service.CreateSavePrepareShortURL(longURLStr)
 	if errText != "" {
 		logger.Sugaarz.Errorw(errText)
-		http.Error(res, errText, http.StatusInternalServerError)
+		WriteError(res, errText, http.StatusInternalServerError)
 		return
 	}
 
@@ -58,7 +58,7 @@ func (h *Handler) SaveURL(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusCreated)
 	_, err = res.Write([]byte(shortURL))
 	if err != nil {
-		http.Error(res, "Failed to write short url into response", http.StatusInternalServerError)
+		WriteError(res, "Failed to write short url into response", http.StatusInternalServerError)
 		return
 	}
 
@@ -71,7 +71,7 @@ func (h *Handler) GetLongURL(res http.ResponseWriter, req *http.Request) {
 		res.Header().Set("Location", longURLStr)
 		res.WriteHeader(http.StatusTemporaryRedirect)
 	} else {
-		http.Error(res, "Short url not found", http.StatusBadRequest)
+		WriteError(res, "Short url not found", http.StatusBadRequest)
 		return
 	}
 }
@@ -82,14 +82,14 @@ func (h *Handler) APIPrepareShortURL(res http.ResponseWriter, req *http.Request)
 	err := json.NewDecoder(req.Body).Decode(&apiReq)
 	if err != nil {
 		logger.Sugaarz.Errorw("error decoding body", "err", err)
-		http.Error(res, "Failed to decode body", http.StatusInternalServerError)
+		WriteError(res, "Failed to decode body", http.StatusInternalServerError)
 		return
 	}
 
 	shortURL, errText := h.service.CreateSavePrepareShortURL(apiReq.LongURL)
 	if errText != "" {
 		logger.Sugaarz.Errorw(errText)
-		http.Error(res, errText, http.StatusInternalServerError)
+		WriteError(res, errText, http.StatusInternalServerError)
 		return
 	}
 
@@ -100,7 +100,7 @@ func (h *Handler) APIPrepareShortURL(res http.ResponseWriter, req *http.Request)
 	res.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(res).Encode(apiResp); err != nil {
 		logger.Sugaarz.Errorw("error encoding body", "err", err)
-		http.Error(res, "Failed to encode body", http.StatusInternalServerError)
+		WriteError(res, "Failed to encode body", http.StatusInternalServerError)
 		return
 	}
 	logger.Sugaarz.Debugw("sent APIPrepareShortURL response")

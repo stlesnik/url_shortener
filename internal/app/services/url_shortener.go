@@ -8,11 +8,6 @@ import (
 	"hash/fnv"
 )
 
-type Repository interface {
-	Save(shortURL string, longURLStr string) error
-	Get(shortURL string) (string, bool)
-}
-
 type URLShortenerService struct {
 	repo Repository
 	cfg  *config.Config
