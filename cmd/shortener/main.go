@@ -2,12 +2,20 @@ package main
 
 import (
 	"github.com/stlesnik/url_shortener/cmd/config"
+	"github.com/stlesnik/url_shortener/cmd/logger"
 	"github.com/stlesnik/url_shortener/internal/app/repository"
 	"github.com/stlesnik/url_shortener/internal/app/server"
 	"log"
 )
 
 func main() {
+	logger.InitLogger()
+	defer func() {
+		if err := logger.Sugaarz.Sync(); err != nil {
+			logger.Sugaarz.Errorw("Failed to sync logger", "error", err)
+		}
+	}()
+
 	cfg, err := config.NewConfig()
 	if err != nil {
 		log.Fatalf("Не получилось создать конфиг: %s", err)
