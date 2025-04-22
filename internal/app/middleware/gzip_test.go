@@ -23,6 +23,9 @@ func TestWithCompress(t *testing.T) {
 
 	handler.ServeHTTP(w, req)
 	resp := w.Result()
+	defer func() {
+		require.NoError(t, resp.Body.Close())
+	}()
 
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	require.Equal(t, "gzip", resp.Header.Get("Content-Encoding"))
@@ -62,5 +65,8 @@ func TestWithDecompress(t *testing.T) {
 	handler.ServeHTTP(w, req)
 
 	resp := w.Result()
+	defer func() {
+		require.NoError(t, resp.Body.Close())
+	}()
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 }
