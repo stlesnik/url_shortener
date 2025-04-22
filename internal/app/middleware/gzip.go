@@ -24,18 +24,35 @@ func WithDecompress(next http.HandlerFunc) http.HandlerFunc {
 			}
 		}()
 		r.Body = gr
-
+		r.Header.Del("Content-Encoding")
+		next(w, r)
 	}
 }
 
 type gzipResponseWriter struct {
 	http.ResponseWriter
-	writer *gzip.Writer
+	writer      *gzip.Writer
+	wroteHeader bool
+}
+
+func (gw *gzipResponseWriter) WriteHeader(status int) {
+	if !gw.wroteHeader {
+		ct := gw.Header().Get("Content-Type")
+		if strings.HasPrefix(ct, "application/json") || strings.HasPrefix(ct, "text/") {
+			gw.Header().Add("Content-Encoding", "gzip")
+			gw.writer = gzip.NewWriter(gw.ResponseWriter)
+		}
+		gw.wroteHeader = true
+	}
+	gw.ResponseWriter.WriteHeader(status)
 }
 
 func (gw *gzipResponseWriter) Write(b []byte) (int, error) {
-	ct := gw.Header().Get("Content-Type")
-	if strings.HasPrefix(ct, "application/json") || strings.HasPrefix(ct, "text/html") {
+	if !gw.wroteHeader {
+		gw.WriteHeader(http.StatusOK)
+	}
+
+	if gw.writer != nil {
 		return gw.writer.Write(b)
 	}
 	return gw.ResponseWriter.Write(b)
@@ -43,18 +60,15 @@ func (gw *gzipResponseWriter) Write(b []byte) (int, error) {
 
 func WithCompress(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Accept-Encoding") != "gzip" {
+		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
 			next(w, r)
 			return
 		}
-		w.Header().Set("Content-Encoding", "gzip")
-		gz := gzip.NewWriter(w)
-		defer func() {
-			if err := gz.Close(); err != nil {
-				logger.Sugaarz.Warnw("failed to close gzip writer", "err", err)
-			}
-		}()
-		gw := &gzipResponseWriter{ResponseWriter: w, writer: gz}
+		gw := &gzipResponseWriter{ResponseWriter: w}
 		next(gw, r)
+
+		if gw.writer != nil {
+			_ = gw.writer.Close()
+		}
 	}
 }
