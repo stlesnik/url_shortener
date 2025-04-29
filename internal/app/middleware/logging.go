@@ -7,36 +7,30 @@ import (
 )
 
 type (
-	responseData struct {
-		status int
-		size   int
-	}
-
 	loggingResponseWriter struct {
 		http.ResponseWriter
-		responseData *responseData
+		status int
+		size   int
 	}
 )
 
 func (r *loggingResponseWriter) Write(b []byte) (int, error) {
 	size, err := r.ResponseWriter.Write(b)
-	r.responseData.size += size
+	r.size += size
 	return size, err
 }
 
 func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 	r.ResponseWriter.WriteHeader(statusCode)
-	r.responseData.status = statusCode
+	r.status = statusCode
 }
 
 func WithLogging(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
-		responseData := &responseData{}
 		lw := loggingResponseWriter{
 			ResponseWriter: w,
-			responseData:   responseData,
 		}
 		next(&lw, r)
 
@@ -47,8 +41,8 @@ func WithLogging(next http.HandlerFunc) http.HandlerFunc {
 			"duration", duration,
 		)
 		logger.Sugaarz.Infow("Sent response",
-			"status", responseData.status,
-			"size", responseData.size,
+			"status", lw.status,
+			"size", lw.size,
 		)
 	}
 }
