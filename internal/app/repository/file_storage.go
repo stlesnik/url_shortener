@@ -3,16 +3,15 @@ package repository
 import (
 	"bufio"
 	"encoding/json"
-	"fmt"
+	"github.com/google/uuid"
 	"os"
 	"sync"
 )
 
 type FileStorage struct {
-	file  *os.File
-	data  map[string]string
-	mu    sync.RWMutex
-	index int
+	file *os.File
+	data map[string]string
+	mu   sync.RWMutex
 }
 
 func NewFileStorage(path string) (*FileStorage, error) {
@@ -31,7 +30,6 @@ func NewFileStorage(path string) (*FileStorage, error) {
 		var rec storedRecord
 		if err := json.Unmarshal(scanner.Bytes(), &rec); err == nil {
 			fs.data[rec.ShortURL] = rec.OriginalURL
-			fs.index++
 		}
 	}
 
@@ -46,13 +44,8 @@ func (f *FileStorage) Save(short string, long string) error {
 	}
 
 	f.data[short] = long
-	f.index++
 
-	rec := storedRecord{
-		UUID:        fmt.Sprintf("%d", f.index),
-		ShortURL:    short,
-		OriginalURL: long,
-	}
+	rec := newStoredRecord(short, long)
 
 	b, err := json.Marshal(rec)
 	if err != nil {
@@ -79,4 +72,12 @@ type storedRecord struct {
 	UUID        string `json:"uuid"`
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
+}
+
+func newStoredRecord(shortURL, originalURL string) storedRecord {
+	return storedRecord{
+		UUID:        uuid.New().String(),
+		ShortURL:    shortURL,
+		OriginalURL: originalURL,
+	}
 }
