@@ -1,11 +1,9 @@
-package services_test
+package services
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/stlesnik/url_shortener/cmd/config"
-	"github.com/stlesnik/url_shortener/internal/app/services"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -17,7 +15,7 @@ type MockRepository struct {
 
 func (m *MockRepository) Save(shortURL, longURL string) error {
 	if m.fail {
-		return errors.New("save error")
+		return ErrSave
 	}
 	m.storage[shortURL] = longURL
 	return nil
@@ -56,7 +54,7 @@ func TestURLShortenerService_CreateSavePrepareShortURL(t *testing.T) {
 				storage: make(map[string]string),
 				fail:    tt.repoFailure,
 			}
-			service := services.NewURLShortenerService(repo, cfg)
+			service := NewURLShortenerService(repo, cfg)
 
 			shortURL, errMsg := service.CreateSavePrepareShortURL(tt.longURL)
 
@@ -73,7 +71,7 @@ func TestURLShortenerService_CreateSavePrepareShortURL(t *testing.T) {
 }
 
 func TestURLShortenerService_CreateShortURLHash(t *testing.T) {
-	service := services.NewURLShortenerService(nil, &config.Config{})
+	service := NewURLShortenerService(nil, &config.Config{})
 
 	t.Run("Hash generation", func(t *testing.T) {
 		url1 := "https://google.com"
@@ -110,7 +108,7 @@ func TestURLShortenerService_SaveShortURL(t *testing.T) {
 				storage: make(map[string]string),
 				fail:    tt.repoFailure,
 			}
-			service := services.NewURLShortenerService(repo, cfg)
+			service := NewURLShortenerService(repo, cfg)
 
 			err := service.SaveShortURL(hash, longURL)
 
@@ -127,7 +125,7 @@ func TestURLShortenerService_SaveShortURL(t *testing.T) {
 
 func TestURLShortenerService_PrepareShortURL(t *testing.T) {
 	cfg := &config.Config{BaseURL: "http://localhost:8080"}
-	service := services.NewURLShortenerService(nil, cfg)
+	service := NewURLShortenerService(nil, cfg)
 	hash := "abc123"
 
 	result := service.PrepareShortURL(hash)
@@ -154,7 +152,7 @@ func TestURLShortenerService_GetLongURLFromDB(t *testing.T) {
 			if tt.prepopulate {
 				repo.storage[tt.hash] = tt.wantURL
 			}
-			service := services.NewURLShortenerService(repo, cfg)
+			service := NewURLShortenerService(repo, cfg)
 
 			result, err := service.GetLongURLFromDB(tt.hash)
 

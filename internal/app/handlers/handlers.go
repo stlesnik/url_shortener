@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/stlesnik/url_shortener/cmd/logger"
@@ -24,16 +23,15 @@ func NewHandler(service *services.URLShortenerService) *Handler {
 func (h *Handler) getLongURLFromReq(req *http.Request) (string, error) {
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
-		return "", errors.New("error reading body")
+		return "", ErrReadingBody
 	}
 	longURLStr := string(body)
 	if longURLStr == "" {
-		return "", errors.New("didnt get url")
+		return "", ErrDidntGetURL
 	}
 	_, err = url.ParseRequestURI(longURLStr)
 	if err != nil {
-		errorText := fmt.Sprintf("got incorrect url to shorten: url=%v, err=%v", longURLStr, err.Error())
-		return "", errors.New(errorText)
+		return "", fmt.Errorf("got incorrect url to shorten: url=%v, err=%v: %w", longURLStr, err, ErrInvalidURL)
 	}
 	return longURLStr, nil
 }

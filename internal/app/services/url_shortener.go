@@ -2,7 +2,6 @@ package services
 
 import (
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"github.com/stlesnik/url_shortener/cmd/config"
 	"hash/fnv"
@@ -51,7 +50,7 @@ func (s *URLShortenerService) PrepareShortURL(urlHash string) string {
 func (s *URLShortenerService) GetLongURLFromDB(URLHash string) (string, error) {
 	longURL, exists := s.repo.Get(URLHash)
 	if !exists {
-		return "", errors.New("not found")
+		return "", ErrUrlNotFound
 	}
 	return longURL, nil
 }
