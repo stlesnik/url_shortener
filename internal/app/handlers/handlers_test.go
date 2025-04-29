@@ -17,8 +17,9 @@ import (
 )
 
 func TestHandler_getLongURLFromReq(t *testing.T) {
-	logger.InitLogger()
 	cfg := &config.Config{BaseURL: "http://localhost:8000"}
+	err := logger.InitLogger(cfg.Environment)
+	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
 	service := services.NewURLShortenerService(repo, cfg)
 	handler := NewHandler(service)
@@ -67,8 +68,9 @@ func TestHandler_getLongURLFromReq(t *testing.T) {
 }
 
 func TestHandler_SaveURL(t *testing.T) {
-	logger.InitLogger()
 	cfg := &config.Config{BaseURL: "http://localhost:8000"}
+	err := logger.InitLogger(cfg.Environment)
+	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
 	service := services.NewURLShortenerService(repo, cfg)
 	handler := NewHandler(service)
@@ -127,8 +129,9 @@ func TestHandler_SaveURL(t *testing.T) {
 }
 
 func TestHandler_GetLongURL(t *testing.T) {
-	logger.InitLogger()
 	cfg := &config.Config{BaseURL: "http://localhost:8000"} // Добавляем конфиг
+	err := logger.InitLogger(cfg.Environment)
+	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
 	_ = repo.Save("_SGMGLQIsIM=", "http://mbrgaoyhv.yandex")
 	service := services.NewURLShortenerService(repo, cfg)
@@ -182,8 +185,9 @@ func TestHandler_GetLongURL(t *testing.T) {
 }
 
 func TestHandler_ApiPrepareShortURL(t *testing.T) {
-	logger.InitLogger()
 	cfg := &config.Config{BaseURL: "http://localhost:8000"}
+	err := logger.InitLogger(cfg.Environment)
+	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
 	service := services.NewURLShortenerService(repo, cfg)
 	handler := NewHandler(service)
