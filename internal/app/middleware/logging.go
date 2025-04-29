@@ -33,10 +33,7 @@ func WithLogging(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
-		responseData := &responseData{
-			status: 0,
-			size:   0,
-		}
+		responseData := &responseData{}
 		lw := loggingResponseWriter{
 			ResponseWriter: w,
 			responseData:   responseData,
