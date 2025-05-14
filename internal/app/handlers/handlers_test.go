@@ -3,10 +3,10 @@ package handlers
 import (
 	"context"
 	"github.com/go-chi/chi/v5"
-	"github.com/stlesnik/url_shortener/cmd/config"
-	"github.com/stlesnik/url_shortener/cmd/logger"
 	"github.com/stlesnik/url_shortener/internal/app/repository"
 	"github.com/stlesnik/url_shortener/internal/app/services"
+	"github.com/stlesnik/url_shortener/internal/config"
+	"github.com/stlesnik/url_shortener/internal/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"

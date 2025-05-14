@@ -1,9 +1,9 @@
 package services
 
 import (
+	"github.com/stlesnik/url_shortener/internal/config"
 	"testing"
 
-	"github.com/stlesnik/url_shortener/cmd/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

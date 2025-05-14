@@ -3,7 +3,7 @@ package services
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/stlesnik/url_shortener/cmd/config"
+	"github.com/stlesnik/url_shortener/internal/config"
 	"hash/fnv"
 )
 

@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/stlesnik/url_shortener/cmd/config"
-	"github.com/stlesnik/url_shortener/cmd/logger"
 	"github.com/stlesnik/url_shortener/internal/app/repository"
 	"github.com/stlesnik/url_shortener/internal/app/server"
 	"github.com/stlesnik/url_shortener/internal/app/services"
+	"github.com/stlesnik/url_shortener/internal/config"
+	"github.com/stlesnik/url_shortener/internal/logger"
 	"log"
 )
 
