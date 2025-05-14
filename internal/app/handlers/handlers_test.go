@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/go-chi/chi/v5"
 	"github.com/stlesnik/url_shortener/cmd/config"
+	"github.com/stlesnik/url_shortener/cmd/logger"
 	"github.com/stlesnik/url_shortener/internal/app/repository"
 	"github.com/stlesnik/url_shortener/internal/app/services"
 	"github.com/stretchr/testify/assert"
@@ -17,6 +18,8 @@ import (
 
 func TestHandler_getLongURLFromReq(t *testing.T) {
 	cfg := &config.Config{BaseURL: "http://localhost:8000"}
+	err := logger.InitLogger(cfg.Environment)
+	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
 	service := services.NewURLShortenerService(repo, cfg)
 	handler := NewHandler(service)
@@ -38,12 +41,12 @@ func TestHandler_getLongURLFromReq(t *testing.T) {
 		{
 			name:     "bad body",
 			longURL:  ``,
-			expected: expected{longURLStr: "", error: "didnt get url"},
+			expected: expected{longURLStr: "", error: "error getting url"},
 		},
 		{
 			name:     "bad url",
 			longURL:  "://mbrgaoyhv.yandex",
-			expected: expected{longURLStr: "", error: "got incorrect url to shorten: url=://mbrgaoyhv.yandex, err=parse \"://mbrgaoyhv.yandex\": missing protocol scheme"},
+			expected: expected{longURLStr: "", error: "got incorrect url to shorten: url=://mbrgaoyhv.yandex, err=parse \"://mbrgaoyhv.yandex\": missing protocol scheme: invalid url to shorten"},
 		},
 	}
 
@@ -66,6 +69,8 @@ func TestHandler_getLongURLFromReq(t *testing.T) {
 
 func TestHandler_SaveURL(t *testing.T) {
 	cfg := &config.Config{BaseURL: "http://localhost:8000"}
+	err := logger.InitLogger(cfg.Environment)
+	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
 	service := services.NewURLShortenerService(repo, cfg)
 	handler := NewHandler(service)
@@ -125,6 +130,8 @@ func TestHandler_SaveURL(t *testing.T) {
 
 func TestHandler_GetLongURL(t *testing.T) {
 	cfg := &config.Config{BaseURL: "http://localhost:8000"} // Добавляем конфиг
+	err := logger.InitLogger(cfg.Environment)
+	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
 	_ = repo.Save("_SGMGLQIsIM=", "http://mbrgaoyhv.yandex")
 	service := services.NewURLShortenerService(repo, cfg)
@@ -173,6 +180,49 @@ func TestHandler_GetLongURL(t *testing.T) {
 			if tt.expected.statusCode == http.StatusTemporaryRedirect {
 				assert.Equal(t, tt.expected.location, w.Header().Get("Location"))
 			}
+		})
+	}
+}
+
+func TestHandler_ApiPrepareShortURL(t *testing.T) {
+	cfg := &config.Config{BaseURL: "http://localhost:8000"}
+	err := logger.InitLogger(cfg.Environment)
+	require.NoError(t, err)
+	repo := repository.NewInMemoryRepository()
+	service := services.NewURLShortenerService(repo, cfg)
+	handler := NewHandler(service)
+
+	tests := []struct {
+		name         string
+		body         string
+		expectedCode int
+		expectedBody string
+	}{
+		{
+			name:         "Good json case",
+			body:         `{"url":"https://vk.com"}`,
+			expectedCode: 201,
+			expectedBody: `{"result":"http://localhost:8000/ymMooIzfwh4="}`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodPost, "/api/shorten", strings.NewReader(tt.body))
+			r.Header.Add("Content-Type", "application/json")
+			w := httptest.NewRecorder()
+			handler.APIPrepareShortURL(w, r)
+
+			require.Equal(t, tt.expectedCode, w.Code)
+			res := w.Result()
+			if tt.expectedCode == http.StatusCreated {
+				resJSONBytes, err := io.ReadAll(res.Body)
+				require.NoError(t, err)
+
+				resJSON := string(resJSONBytes)
+				assert.JSONEq(t, tt.expectedBody, resJSON)
+			}
+			err := res.Body.Close()
+			require.NoError(t, err)
 		})
 	}
 }
