@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
-	"github.com/stlesnik/url_shortener/cmd/logger"
 	"github.com/stlesnik/url_shortener/internal/app/models"
 	"github.com/stlesnik/url_shortener/internal/app/services"
+	"github.com/stlesnik/url_shortener/internal/logger"
 	"io"
 	"net/http"
 	"net/url"
@@ -102,4 +102,15 @@ func (h *Handler) APIPrepareShortURL(res http.ResponseWriter, req *http.Request)
 		return
 	}
 	logger.Sugaarz.Debugw("sent APIPrepareShortURL response")
+}
+
+func (h *Handler) PingDB(res http.ResponseWriter, _ *http.Request) {
+	logger.Sugaarz.Debugw("got PingDB request")
+	err := h.service.PingDB()
+	if err == nil {
+		res.WriteHeader(http.StatusOK)
+	} else {
+		WriteError(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
