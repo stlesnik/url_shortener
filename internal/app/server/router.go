@@ -8,7 +8,7 @@ import (
 )
 
 func (s *Server) setupRoutes() {
-	service := services.NewURLShortenerService(s.repo, s.cfg)
+	service := services.NewURLShortenerService(s.repo, s.cfg, s.db)
 	hs := handlers.NewHandler(service)
 	wrap := func(h http.HandlerFunc) http.HandlerFunc {
 		return middleware.WithLogging(
@@ -18,6 +18,7 @@ func (s *Server) setupRoutes() {
 		)
 	}
 	s.router.Post("/", wrap(hs.SaveURL))
+	s.router.Get("/ping", wrap(hs.PingDB))
 	s.router.Get("/{id}", wrap(hs.GetLongURL))
 	s.router.Post("/api/shorten", wrap(hs.APIPrepareShortURL))
 }

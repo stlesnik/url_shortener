@@ -3,7 +3,9 @@ package handlers
 import (
 	"context"
 	"github.com/go-chi/chi/v5"
+	"github.com/golang/mock/gomock"
 	"github.com/stlesnik/url_shortener/internal/app/repository"
+	"github.com/stlesnik/url_shortener/internal/app/repository/mocks"
 	"github.com/stlesnik/url_shortener/internal/app/services"
 	"github.com/stlesnik/url_shortener/internal/config"
 	"github.com/stlesnik/url_shortener/internal/logger"
@@ -21,7 +23,8 @@ func TestHandler_getLongURLFromReq(t *testing.T) {
 	err := logger.InitLogger(cfg.Environment)
 	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
-	service := services.NewURLShortenerService(repo, cfg)
+
+	service := services.NewURLShortenerService(repo, cfg, nil)
 	handler := NewHandler(service)
 
 	type expected struct {
@@ -72,7 +75,7 @@ func TestHandler_SaveURL(t *testing.T) {
 	err := logger.InitLogger(cfg.Environment)
 	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
-	service := services.NewURLShortenerService(repo, cfg)
+	service := services.NewURLShortenerService(repo, cfg, nil)
 	handler := NewHandler(service)
 
 	type expected struct {
@@ -134,7 +137,7 @@ func TestHandler_GetLongURL(t *testing.T) {
 	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
 	_ = repo.Save("_SGMGLQIsIM=", "http://mbrgaoyhv.yandex")
-	service := services.NewURLShortenerService(repo, cfg)
+	service := services.NewURLShortenerService(repo, cfg, nil)
 	handler := NewHandler(service)
 
 	type expected struct {
@@ -189,7 +192,7 @@ func TestHandler_ApiPrepareShortURL(t *testing.T) {
 	err := logger.InitLogger(cfg.Environment)
 	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
-	service := services.NewURLShortenerService(repo, cfg)
+	service := services.NewURLShortenerService(repo, cfg, nil)
 	handler := NewHandler(service)
 
 	tests := []struct {
@@ -225,4 +228,28 @@ func TestHandler_ApiPrepareShortURL(t *testing.T) {
 			require.NoError(t, err)
 		})
 	}
+}
+
+func TestHandler_PingDB(t *testing.T) {
+	cfg := &config.Config{BaseURL: "http://localhost:8000"} // Добавляем конфиг
+	err := logger.InitLogger(cfg.Environment)
+	require.NoError(t, err)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	m := mocks.NewMockDB(ctrl)
+	m.EXPECT().Ping().Return(nil)
+	require.NoError(t, err)
+	repo := repository.NewInMemoryRepository()
+	service := services.NewURLShortenerService(repo, cfg, m)
+	handler := NewHandler(service)
+
+	t.Run("Mock test db", func(t *testing.T) {
+		r := httptest.NewRequest(http.MethodGet, "/ping", nil)
+		w := httptest.NewRecorder()
+		handler.PingDB(w, r)
+
+		require.Equal(t, 200, w.Code)
+	})
+
 }

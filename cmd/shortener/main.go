@@ -28,6 +28,18 @@ func main() {
 		}
 	}()
 
+	// бд
+	db, dbErr := repository.NewDataBase(cfg.DatabaseDSN)
+	if dbErr != nil {
+		panic(fmt.Errorf("не получилось подключиться к бд: %s", dbErr))
+	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			logger.Sugaarz.Errorw("Failed to close db", "error", err)
+		}
+	}()
+
+	// текущая логика репозитория
 	var repo services.Repository
 	if cfg.FileStoragePath != "" {
 		fStorage, err := repository.NewFileStorage(cfg.FileStoragePath)
@@ -38,7 +50,7 @@ func main() {
 	} else {
 		repo = repository.NewInMemoryRepository()
 	}
-	srv := server.NewServer(repo, cfg)
+	srv := server.NewServer(repo, cfg, db)
 
 	log.Printf("Сервер запущен на %s", cfg.ServerAddress)
 	err = srv.Start()

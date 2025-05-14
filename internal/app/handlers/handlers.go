@@ -103,3 +103,14 @@ func (h *Handler) APIPrepareShortURL(res http.ResponseWriter, req *http.Request)
 	}
 	logger.Sugaarz.Debugw("sent APIPrepareShortURL response")
 }
+
+func (h *Handler) PingDB(res http.ResponseWriter, _ *http.Request) {
+	logger.Sugaarz.Debugw("got PingDB request")
+	err := h.service.PingDB()
+	if err == nil {
+		res.WriteHeader(http.StatusOK)
+	} else {
+		WriteError(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
