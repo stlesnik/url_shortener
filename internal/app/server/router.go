@@ -8,7 +8,7 @@ import (
 )
 
 func (s *Server) setupRoutes() {
-	service := services.NewURLShortenerService(s.repo, s.cfg, s.db)
+	service := services.NewURLShortenerService(s.repo, s.cfg)
 	hs := handlers.NewHandler(service)
 	wrap := func(h http.HandlerFunc) http.HandlerFunc {
 		return middleware.WithLogging(

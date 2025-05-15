@@ -18,9 +18,9 @@ func NewConfig() (*Config, error) {
 
 	defaultAddress := "localhost:8080"
 	defaultBaseURL := "http://localhost:8080"
-	defaultFile := "storage.json"
+	defaultFile := ""
 	defaultEnvironment := "dev"
-	defaultDatabaseDSN := "localhost:5432"
+	defaultDatabaseDSN := ""
 
 	flag.StringVar(&cfg.ServerAddress, "a", defaultAddress, "Address to run the server")
 	flag.StringVar(&cfg.BaseURL, "b", defaultBaseURL, "Base URL for shortened links")

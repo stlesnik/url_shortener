@@ -3,7 +3,6 @@ package services
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/stlesnik/url_shortener/internal/app/repository"
 	"github.com/stlesnik/url_shortener/internal/config"
 	"hash/fnv"
 )
@@ -11,21 +10,20 @@ import (
 type URLShortenerService struct {
 	repo Repository
 	cfg  *config.Config
-	db   repository.DB
 }
 
-func NewURLShortenerService(repo Repository, cfg *config.Config, db repository.DB) *URLShortenerService {
-	return &URLShortenerService{repo, cfg, db}
+func NewURLShortenerService(repo Repository, cfg *config.Config) *URLShortenerService {
+	return &URLShortenerService{repo, cfg}
 }
 
 func (s *URLShortenerService) CreateSavePrepareShortURL(longURL string) (string, string) {
 	urlHash, err := s.CreateShortURLHash(longURL)
 	if err != nil {
-		return "", "Failed to create short url"
+		return "", "Failed to create short URL, err: " + err.Error()
 	}
 	err = s.SaveShortURL(urlHash, longURL)
 	if err != nil {
-		return "", "Failed to save short url"
+		return "", "Failed to save short url, err: " + err.Error()
 	}
 	shortURL := s.PrepareShortURL(urlHash)
 	return shortURL, ""
@@ -58,5 +56,5 @@ func (s *URLShortenerService) GetLongURLFromDB(URLHash string) (string, error) {
 }
 
 func (s *URLShortenerService) PingDB() error {
-	return s.db.Ping()
+	return s.repo.Ping()
 }

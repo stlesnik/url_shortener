@@ -5,8 +5,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"
 	"github.com/stlesnik/url_shortener/internal/app/repository"
-	"github.com/stlesnik/url_shortener/internal/app/repository/mocks"
 	"github.com/stlesnik/url_shortener/internal/app/services"
+	"github.com/stlesnik/url_shortener/internal/app/services/mocks"
 	"github.com/stlesnik/url_shortener/internal/config"
 	"github.com/stlesnik/url_shortener/internal/logger"
 	"github.com/stretchr/testify/assert"
@@ -24,7 +24,7 @@ func TestHandler_getLongURLFromReq(t *testing.T) {
 	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
 
-	service := services.NewURLShortenerService(repo, cfg, nil)
+	service := services.NewURLShortenerService(repo, cfg)
 	handler := NewHandler(service)
 
 	type expected struct {
@@ -75,7 +75,7 @@ func TestHandler_SaveURL(t *testing.T) {
 	err := logger.InitLogger(cfg.Environment)
 	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
-	service := services.NewURLShortenerService(repo, cfg, nil)
+	service := services.NewURLShortenerService(repo, cfg)
 	handler := NewHandler(service)
 
 	type expected struct {
@@ -137,7 +137,7 @@ func TestHandler_GetLongURL(t *testing.T) {
 	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
 	_ = repo.Save("_SGMGLQIsIM=", "http://mbrgaoyhv.yandex")
-	service := services.NewURLShortenerService(repo, cfg, nil)
+	service := services.NewURLShortenerService(repo, cfg)
 	handler := NewHandler(service)
 
 	type expected struct {
@@ -192,7 +192,7 @@ func TestHandler_ApiPrepareShortURL(t *testing.T) {
 	err := logger.InitLogger(cfg.Environment)
 	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
-	service := services.NewURLShortenerService(repo, cfg, nil)
+	service := services.NewURLShortenerService(repo, cfg)
 	handler := NewHandler(service)
 
 	tests := []struct {
@@ -237,11 +237,10 @@ func TestHandler_PingDB(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	m := mocks.NewMockDB(ctrl)
+	m := mocks.NewMockRepository(ctrl)
 	m.EXPECT().Ping().Return(nil)
 	require.NoError(t, err)
-	repo := repository.NewInMemoryRepository()
-	service := services.NewURLShortenerService(repo, cfg, m)
+	service := services.NewURLShortenerService(m, cfg)
 	handler := NewHandler(service)
 
 	t.Run("Mock test db", func(t *testing.T) {
