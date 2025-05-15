@@ -1,6 +1,9 @@
 package repository
 
-import "sync"
+import (
+	"fmt"
+	"sync"
+)
 
 type InMemoryRepository struct {
 	data map[string]string
@@ -9,6 +12,13 @@ type InMemoryRepository struct {
 
 func NewInMemoryRepository() *InMemoryRepository {
 	return &InMemoryRepository{data: make(map[string]string)}
+}
+
+func (s *InMemoryRepository) Ping() error {
+	if s.data != nil {
+		return nil
+	}
+	return fmt.Errorf("in memory repository is empty")
 }
 
 func (s *InMemoryRepository) Save(short string, long string) error {
@@ -24,3 +34,5 @@ func (s *InMemoryRepository) Get(short string) (string, bool) {
 	long, exists := s.data[short]
 	return long, exists
 }
+
+func (s *InMemoryRepository) Close() error { return nil }

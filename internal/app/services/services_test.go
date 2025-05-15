@@ -1,9 +1,9 @@
 package services
 
 import (
+	"github.com/stlesnik/url_shortener/internal/config"
 	"testing"
 
-	"github.com/stlesnik/url_shortener/cmd/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -12,6 +12,8 @@ type MockRepository struct {
 	storage map[string]string
 	fail    bool
 }
+
+func (m *MockRepository) Ping() error { return nil }
 
 func (m *MockRepository) Save(shortURL, longURL string) error {
 	if m.fail {
@@ -24,6 +26,10 @@ func (m *MockRepository) Save(shortURL, longURL string) error {
 func (m *MockRepository) Get(shortURL string) (string, bool) {
 	val, exists := m.storage[shortURL]
 	return val, exists
+}
+
+func (m *MockRepository) Close() error {
+	return nil
 }
 
 func TestURLShortenerService_CreateSavePrepareShortURL(t *testing.T) {

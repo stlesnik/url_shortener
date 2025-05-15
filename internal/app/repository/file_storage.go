@@ -3,6 +3,7 @@ package repository
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"github.com/google/uuid"
 	"os"
 	"sync"
@@ -35,6 +36,14 @@ func NewFileStorage(path string) (*FileStorage, error) {
 
 	return fs, nil
 }
+
+func (f *FileStorage) Ping() error {
+	if f.data != nil {
+		return nil
+	}
+	return fmt.Errorf("in memory repository is empty")
+}
+
 func (f *FileStorage) Save(short string, long string) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
