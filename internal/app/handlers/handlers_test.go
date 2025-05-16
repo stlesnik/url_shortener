@@ -49,7 +49,7 @@ func TestHandler_getLongURLFromReq(t *testing.T) {
 		{
 			name:     "bad url",
 			longURL:  "://mbrgaoyhv.yandex",
-			expected: expected{longURLStr: "", error: "got incorrect url to shorten: url=://mbrgaoyhv.yandex, err=parse \"://mbrgaoyhv.yandex\": missing protocol scheme: invalid url to shorten"},
+			expected: expected{longURLStr: "", error: "got incorrect url to shorten: url=://mbrgaoyhv.yandex, err=got incorrect url to shorten: url=://mbrgaoyhv.yandex, err= parse \"://mbrgaoyhv.yandex\": missing protocol scheme: invalid url to shorten"},
 		},
 	}
 
