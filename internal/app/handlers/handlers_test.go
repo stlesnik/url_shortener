@@ -172,6 +172,15 @@ func TestHandler_SaveURL_Conflict_WithMockRepo(t *testing.T) {
 	assert.Equal(t, "text/plain", w2.Header().Get("Content-Type"))
 	body2, _ := io.ReadAll(w2.Result().Body)
 	assert.Equal(t, body1, body2)
+
+	err = w1.Result().Body.Close()
+	if err != nil {
+		panic(err)
+	}
+	err = w2.Result().Body.Close()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func TestHandler_GetLongURL(t *testing.T) {
