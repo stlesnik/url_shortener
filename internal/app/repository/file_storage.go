@@ -3,6 +3,7 @@ package repository
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"github.com/google/uuid"
 	"os"
 	"sync"
@@ -35,12 +36,20 @@ func NewFileStorage(path string) (*FileStorage, error) {
 
 	return fs, nil
 }
-func (f *FileStorage) Save(short string, long string) error {
+
+func (f *FileStorage) Ping() error {
+	if f.data != nil {
+		return nil
+	}
+	return fmt.Errorf("in memory repository is empty")
+}
+
+func (f *FileStorage) Save(short string, long string) (isDouble bool, err error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
 	if _, exists := f.data[short]; exists {
-		return nil
+		return true, nil
 	}
 
 	f.data[short] = long
@@ -49,11 +58,11 @@ func (f *FileStorage) Save(short string, long string) error {
 
 	b, err := json.Marshal(rec)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	_, err = f.file.Write(append(b, '\n'))
-	return err
+	return false, err
 }
 
 func (f *FileStorage) Get(short string) (string, bool) {
