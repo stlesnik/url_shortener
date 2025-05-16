@@ -78,7 +78,7 @@ func (d *DataBase) SaveBatch(batch []URLPair) error {
 
 func (d *DataBase) Get(short string) (string, bool) {
 	var longURL string
-	err := d.db.GetContext(context.Background(), &longURL, "SELECT * FROM url WHERE short_url = $1", short)
+	err := d.db.GetContext(context.Background(), &longURL, "SELECT long_url FROM url WHERE short_url = $1", short)
 	if errors.Is(err, sql.ErrNoRows) {
 		return "", false
 	}
