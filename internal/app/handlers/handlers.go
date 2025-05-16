@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/stlesnik/url_shortener/internal/app/models"
@@ -122,13 +123,15 @@ func (h *Handler) APIPrepareBatchShortURL(res http.ResponseWriter, req *http.Req
 	}
 	//prepare db and response
 	var (
-		apiBatchResp []models.APIResponsePrepareBatchShURL
-		batch        []repository.URLPair
+		apiBatchResp     []models.APIResponsePrepareBatchShURL
+		batch            []repository.URLPair
+		validationErrors []error
 	)
 	for _, obj := range apiBatchReq {
 		validateErr := h.service.ValidateURL(obj.LongURL)
 		if validateErr != nil {
-			logger.Sugaarz.Errorw("got incorrect url to shorten: "+obj.LongURL, "err", err)
+			logger.Sugaarz.Errorw("got incorrect url to shorten: "+obj.LongURL, "err", validateErr)
+			validationErrors = append(validationErrors, validateErr)
 		} else {
 			urlHash, err := h.service.CreateShortURLHash(obj.LongURL)
 			if err != nil {
@@ -156,6 +159,9 @@ func (h *Handler) APIPrepareBatchShortURL(res http.ResponseWriter, req *http.Req
 		logger.Sugaarz.Errorw("error encoding body", "err", err)
 		WriteError(res, "Failed to encode body", http.StatusInternalServerError, true)
 		return
+	}
+	if len(validationErrors) > 0 {
+		logger.Sugaarz.Errorf("got %v errors while processing request: %w", len(validationErrors), errors.Join(validationErrors...))
 	}
 	logger.Sugaarz.Debugw("sent APISaveBatchURL response")
 }
