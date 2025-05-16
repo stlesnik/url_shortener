@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/stlesnik/url_shortener/internal/app/models"
+	"github.com/stlesnik/url_shortener/internal/app/repository"
 	"github.com/stlesnik/url_shortener/internal/app/services"
 	"github.com/stlesnik/url_shortener/internal/logger"
 	"io"
 	"net/http"
-	"net/url"
 )
 
 type Handler struct {
@@ -29,7 +29,7 @@ func (h *Handler) getLongURLFromReq(req *http.Request) (string, error) {
 	if longURLStr == "" {
 		return "", ErrDidntGetURL
 	}
-	_, err = url.ParseRequestURI(longURLStr)
+	err = h.service.ValidateURL(longURLStr)
 	if err != nil {
 		return "", fmt.Errorf("got incorrect url to shorten: url=%v, err=%v: %w", longURLStr, err, ErrInvalidURL)
 	}
@@ -83,6 +83,12 @@ func (h *Handler) APIPrepareShortURL(res http.ResponseWriter, req *http.Request)
 		WriteError(res, "Failed to decode body", http.StatusInternalServerError, true)
 		return
 	}
+	validateErr := h.service.ValidateURL(apiReq.LongURL)
+	if validateErr != nil {
+		logger.Sugaarz.Errorw("got incorrect url to shorten: "+apiReq.LongURL, "err", err)
+		WriteError(res, "got incorrect url to shorten: "+apiReq.LongURL, http.StatusInternalServerError, true)
+		return
+	}
 
 	shortURL, errText := h.service.CreateSavePrepareShortURL(apiReq.LongURL)
 	if errText != "" {
@@ -102,6 +108,56 @@ func (h *Handler) APIPrepareShortURL(res http.ResponseWriter, req *http.Request)
 		return
 	}
 	logger.Sugaarz.Debugw("sent APIPrepareShortURL response")
+}
+
+func (h *Handler) APIPrepareBatchShortURL(res http.ResponseWriter, req *http.Request) {
+	//process request
+	logger.Sugaarz.Debugw("got APISaveBatchURL request")
+	var apiBatchReq []models.APIRequestPrepareBatchShURL
+	err := json.NewDecoder(req.Body).Decode(&apiBatchReq)
+	if err != nil {
+		logger.Sugaarz.Errorw("error decoding body", "err", err)
+		WriteError(res, "Failed to decode body", http.StatusInternalServerError, true)
+		return
+	}
+	//prepare db and response
+	var (
+		apiBatchResp []models.APIResponsePrepareBatchShURL
+		batch        []repository.URLPair
+	)
+	for _, obj := range apiBatchReq {
+		validateErr := h.service.ValidateURL(obj.LongURL)
+		if validateErr != nil {
+			logger.Sugaarz.Errorw("got incorrect url to shorten: "+obj.LongURL, "err", err)
+		} else {
+			urlHash, err := h.service.CreateShortURLHash(obj.LongURL)
+			if err != nil {
+				logger.Sugaarz.Errorw("Failed to create short URL", "err", err)
+				WriteError(res, "Failed to create short URL,", http.StatusInternalServerError, true)
+				return
+			}
+			batch = append(batch, repository.URLPair{URLHash: urlHash, LongURL: obj.LongURL})
+			apiBatchResp = append(apiBatchResp, models.APIResponsePrepareBatchShURL{
+				CorrelationId: obj.CorrelationId, ShortURL: h.service.PrepareShortURL(urlHash)})
+		}
+	}
+	//save batch
+	txErr := h.service.SaveBatchShortURL(batch)
+	if txErr != nil {
+		logger.Sugaarz.Errorw("error while saving batch", "err", txErr)
+		WriteError(res, "error while saving batch", http.StatusInternalServerError, true)
+		return
+	}
+
+	//create response
+	res.Header().Set("Content-Type", "application/json")
+	res.WriteHeader(http.StatusCreated)
+	if err := json.NewEncoder(res).Encode(apiBatchResp); err != nil {
+		logger.Sugaarz.Errorw("error encoding body", "err", err)
+		WriteError(res, "Failed to encode body", http.StatusInternalServerError, true)
+		return
+	}
+	logger.Sugaarz.Debugw("sent APISaveBatchURL response")
 }
 
 func (h *Handler) PingDB(res http.ResponseWriter, _ *http.Request) {

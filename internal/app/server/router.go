@@ -21,4 +21,6 @@ func (s *Server) setupRoutes() {
 	s.router.Get("/ping", wrap(hs.PingDB))
 	s.router.Get("/{id}", wrap(hs.GetLongURL))
 	s.router.Post("/api/shorten", wrap(hs.APIPrepareShortURL))
+	s.router.Post("/api/shorten/batch", wrap(hs.APIPrepareBatchShortURL))
+
 }

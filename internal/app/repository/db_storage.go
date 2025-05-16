@@ -6,33 +6,28 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jmoiron/sqlx"
 	"github.com/stlesnik/url_shortener/internal/logger"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 type DataBase struct {
-	db *sql.DB
+	db *sqlx.DB
 }
 
 func NewDataBase(dsn string) (*DataBase, error) {
-	db, err := sql.Open("pgx", dsn)
+	db := sqlx.MustOpen("pgx", dsn)
+	err := warmupDB(db)
 	if err != nil {
-		return nil, fmt.Errorf("got error while connecting to db: %w", err)
-	}
-	err = warmupDB(db)
-	if err != nil {
-		return nil, err
+		logger.Sugaarz.Errorf("error while warming db up: %w", err)
+		return nil, fmt.Errorf("error while warming db up: %w", err)
 	}
 	return &DataBase{db: db}, nil
 }
 
-func warmupDB(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(), "CREATE TABLE IF NOT EXISTS url(id serial primary key, short_url varchar not null unique,long_url varchar not null)")
-	if err != nil {
-		logger.Sugaarz.Errorf("error while warming db up: %w", err)
-		return fmt.Errorf("error while warming db up: %w", err)
-	}
+func warmupDB(db *sqlx.DB) error {
+	_ = db.MustExecContext(context.Background(), "CREATE TABLE IF NOT EXISTS url(id serial primary key, short_url varchar not null unique,long_url varchar not null)")
 	return nil
 }
 
@@ -40,7 +35,7 @@ func (d *DataBase) Ping() error {
 	if d.db == nil {
 		return fmt.Errorf("database does not exist")
 	}
-	if err := d.db.PingContext(context.TODO()); err != nil {
+	if err := d.db.Ping(); err != nil {
 		return fmt.Errorf("error while ping to db: %w", err)
 	}
 	return nil
@@ -59,9 +54,31 @@ func (d *DataBase) Save(short string, long string) error {
 	return nil
 }
 
+type URLPair struct {
+	URLHash string
+	LongURL string
+}
+
+func (d *DataBase) SaveBatch(batch []URLPair) error {
+	tx := d.db.MustBegin()
+
+	for _, pair := range batch {
+		_, err := tx.ExecContext(context.Background(), ""+
+			"INSERT INTO url (short_url, long_url) "+
+			"VALUES ($1, $2) "+
+			"ON CONFLICT (short_url) DO NOTHING", pair.URLHash, pair.LongURL)
+		if err != nil {
+			_ = tx.Rollback()
+			return fmt.Errorf("error while creating SQL statement in transaction: %w", err)
+		}
+	}
+
+	return tx.Commit()
+}
+
 func (d *DataBase) Get(short string) (string, bool) {
 	var longURL string
-	err := d.db.QueryRowContext(context.Background(), "SELECT long_url FROM url WHERE short_url = $1", short).Scan(&longURL)
+	err := d.db.GetContext(context.Background(), &longURL, "SELECT * FROM url WHERE short_url = $1", short)
 	if errors.Is(err, sql.ErrNoRows) {
 		return "", false
 	}

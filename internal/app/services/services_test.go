@@ -1,7 +1,9 @@
 package services
 
 import (
+	"github.com/stlesnik/url_shortener/internal/app/repository"
 	"github.com/stlesnik/url_shortener/internal/config"
+	"github.com/stlesnik/url_shortener/internal/logger"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -32,7 +34,7 @@ func (m *MockRepository) Close() error {
 	return nil
 }
 
-func TestURLShortenerService_CreateSavePrepareShortURL(t *testing.T) {
+func TestServices_CreateSavePrepareShortURL(t *testing.T) {
 	tests := []struct {
 		name        string
 		longURL     string
@@ -76,7 +78,7 @@ func TestURLShortenerService_CreateSavePrepareShortURL(t *testing.T) {
 	}
 }
 
-func TestURLShortenerService_CreateShortURLHash(t *testing.T) {
+func TestServices_CreateShortURLHash(t *testing.T) {
 	service := NewURLShortenerService(nil, &config.Config{})
 
 	t.Run("Hash generation", func(t *testing.T) {
@@ -94,7 +96,7 @@ func TestURLShortenerService_CreateShortURLHash(t *testing.T) {
 	})
 }
 
-func TestURLShortenerService_SaveShortURL(t *testing.T) {
+func TestServices_SaveShortURL(t *testing.T) {
 	tests := []struct {
 		name        string
 		repoFailure bool
@@ -129,7 +131,46 @@ func TestURLShortenerService_SaveShortURL(t *testing.T) {
 	}
 }
 
-func TestURLShortenerService_PrepareShortURL(t *testing.T) {
+func TestServices_SaveBatchShortURL(t *testing.T) {
+	tests := []struct {
+		name        string
+		repoFailure bool
+		wantError   bool
+	}{
+		{"Successful save", false, false},
+		{"Successful save to db", false, false},
+		{"Repository failure", true, true},
+	}
+
+	cfg := &config.Config{}
+	err := logger.InitLogger(cfg.Environment)
+	require.NoError(t, err)
+	urlPairList := []repository.URLPair{
+		{URLHash: "https://google.com", LongURL: "abc123"},
+		{URLHash: "https://google1.com", LongURL: "abc1234"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := &MockRepository{
+				storage: make(map[string]string),
+				fail:    tt.repoFailure,
+			}
+
+			service := NewURLShortenerService(repo, cfg)
+
+			err := service.SaveBatchShortURL(urlPairList)
+
+			if tt.wantError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestServices_PrepareShortURL(t *testing.T) {
 	cfg := &config.Config{BaseURL: "http://localhost:8080"}
 	service := NewURLShortenerService(nil, cfg)
 	hash := "abc123"
@@ -138,7 +179,7 @@ func TestURLShortenerService_PrepareShortURL(t *testing.T) {
 	assert.Equal(t, "http://localhost:8080/abc123", result)
 }
 
-func TestURLShortenerService_GetLongURLFromDB(t *testing.T) {
+func TestServices_GetLongURLFromDB(t *testing.T) {
 	tests := []struct {
 		name        string
 		hash        string

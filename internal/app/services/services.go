@@ -3,8 +3,11 @@ package services
 import (
 	"encoding/base64"
 	"fmt"
+	"github.com/stlesnik/url_shortener/internal/app/repository"
 	"github.com/stlesnik/url_shortener/internal/config"
+	"github.com/stlesnik/url_shortener/internal/logger"
 	"hash/fnv"
+	"net/url"
 )
 
 type URLShortenerService struct {
@@ -41,6 +44,33 @@ func (s *URLShortenerService) CreateShortURLHash(longURL string) (string, error)
 func (s *URLShortenerService) SaveShortURL(urlHash, longURL string) error {
 	err := s.repo.Save(urlHash, longURL)
 	return err
+}
+
+func (s *URLShortenerService) SaveBatchShortURL(urlPairList []repository.URLPair) error {
+	if bSaver, ok := s.repo.(BatchSaver); ok {
+		logger.Sugaarz.Debugw("saving batch urls with BatchSaver")
+		err := bSaver.SaveBatch(urlPairList)
+		if err != nil {
+			return err
+		}
+	} else {
+		logger.Sugaarz.Debugw("saving batch urls ordinary way")
+		for _, urlPair := range urlPairList {
+			err := s.repo.Save(urlPair.URLHash, urlPair.LongURL)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (s *URLShortenerService) ValidateURL(longURL string) error {
+	_, err := url.ParseRequestURI(longURL)
+	if err != nil {
+		return fmt.Errorf("got incorrect url to shorten: url=%v, err= %w", longURL, err)
+	}
+	return nil
 }
 
 func (s *URLShortenerService) PrepareShortURL(urlHash string) string {
