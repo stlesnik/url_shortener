@@ -3,8 +3,11 @@ package services
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/stlesnik/url_shortener/cmd/config"
+	"github.com/stlesnik/url_shortener/internal/app/repository"
+	"github.com/stlesnik/url_shortener/internal/config"
+	"github.com/stlesnik/url_shortener/internal/logger"
 	"hash/fnv"
+	"net/url"
 )
 
 type URLShortenerService struct {
@@ -19,11 +22,11 @@ func NewURLShortenerService(repo Repository, cfg *config.Config) *URLShortenerSe
 func (s *URLShortenerService) CreateSavePrepareShortURL(longURL string) (string, string) {
 	urlHash, err := s.CreateShortURLHash(longURL)
 	if err != nil {
-		return "", "Failed to create short url"
+		return "", "Failed to create short URL, err: " + err.Error()
 	}
 	err = s.SaveShortURL(urlHash, longURL)
 	if err != nil {
-		return "", "Failed to save short url"
+		return "", "Failed to save short url, err: " + err.Error()
 	}
 	shortURL := s.PrepareShortURL(urlHash)
 	return shortURL, ""
@@ -43,6 +46,33 @@ func (s *URLShortenerService) SaveShortURL(urlHash, longURL string) error {
 	return err
 }
 
+func (s *URLShortenerService) SaveBatchShortURL(urlPairList []repository.URLPair) error {
+	if bSaver, ok := s.repo.(BatchSaver); ok {
+		logger.Sugaarz.Debugw("saving batch urls with BatchSaver")
+		err := bSaver.SaveBatch(urlPairList)
+		if err != nil {
+			return err
+		}
+	} else {
+		logger.Sugaarz.Debugw("saving batch urls ordinary way")
+		for _, urlPair := range urlPairList {
+			err := s.repo.Save(urlPair.URLHash, urlPair.LongURL)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (s *URLShortenerService) ValidateURL(longURL string) error {
+	_, err := url.ParseRequestURI(longURL)
+	if err != nil {
+		return fmt.Errorf("got incorrect url to shorten: url=%v, err= %w", longURL, err)
+	}
+	return nil
+}
+
 func (s *URLShortenerService) PrepareShortURL(urlHash string) string {
 	return fmt.Sprintf("%s/%s", s.cfg.BaseURL, urlHash)
 }
@@ -53,4 +83,8 @@ func (s *URLShortenerService) GetLongURLFromDB(URLHash string) (string, error) {
 		return "", ErrURLNotFound
 	}
 	return longURL, nil
+}
+
+func (s *URLShortenerService) PingDB() error {
+	return s.repo.Ping()
 }

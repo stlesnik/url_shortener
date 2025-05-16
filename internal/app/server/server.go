@@ -2,8 +2,8 @@ package server
 
 import (
 	"github.com/go-chi/chi/v5"
-	"github.com/stlesnik/url_shortener/cmd/config"
 	"github.com/stlesnik/url_shortener/internal/app/services"
+	"github.com/stlesnik/url_shortener/internal/config"
 	"net/http"
 )
 
