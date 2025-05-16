@@ -161,7 +161,11 @@ func TestHandler_SaveURL_Conflict_WithMockRepo(t *testing.T) {
 
 	require.Equal(t, http.StatusCreated, w1.Code)
 	assert.Equal(t, "text/plain", w1.Header().Get("Content-Type"))
-	body1, _ := io.ReadAll(w1.Result().Body)
+	res1 := w1.Result()
+	body1, err := io.ReadAll(res1.Body)
+	require.NoError(t, err)
+	err = res1.Body.Close()
+	require.NoError(t, err)
 
 	req2 := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(longURL))
 	req2.Header.Add("Content-Type", "text/plain")
@@ -170,7 +174,11 @@ func TestHandler_SaveURL_Conflict_WithMockRepo(t *testing.T) {
 
 	require.Equal(t, http.StatusConflict, w2.Code)
 	assert.Equal(t, "text/plain", w2.Header().Get("Content-Type"))
-	body2, _ := io.ReadAll(w2.Result().Body)
+	res2 := w2.Result()
+	body2, err := io.ReadAll(res2.Body)
+	require.NoError(t, err)
+	err = res2.Body.Close()
+	require.NoError(t, err)
 	assert.Equal(t, body1, body2)
 
 	err = w1.Result().Body.Close()
