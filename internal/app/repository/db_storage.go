@@ -27,7 +27,10 @@ func NewDataBase(dsn string) (*DataBase, error) {
 }
 
 func warmupDB(db *sqlx.DB) error {
-	_ = db.MustExecContext(context.Background(), "CREATE TABLE IF NOT EXISTS url(id serial primary key, short_url varchar not null unique,long_url varchar not null)")
+	_ = db.MustExecContext(context.Background(), "CREATE TABLE IF NOT EXISTS url("+
+		"id serial primary key,"+
+		"short_url varchar not null,"+
+		"long_url varchar not null unique)")
 	return nil
 }
 
@@ -41,17 +44,18 @@ func (d *DataBase) Ping() error {
 	return nil
 }
 
-func (d *DataBase) Save(short string, long string) error {
-	_, err := d.db.ExecContext(context.Background(), "INSERT INTO url (short_url, long_url) VALUES ($1, $2)", short, long)
-	if err != nil {
-		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23505" {
+func (d *DataBase) Save(short string, long string) (isDouble bool, err error) {
+	_, dbErr := d.db.ExecContext(context.Background(), "INSERT INTO url (short_url, long_url) VALUES ($1, $2)", short, long)
+	if dbErr != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(dbErr, &pgErr) && pgErr.Code == "23505" {
 			logger.Sugaarz.Infow("this short url already exists", "short", short, "long", long)
-			return nil
+			return true, nil
 		}
-		logger.Sugaarz.Errorf("error while saving url: %w", err)
-		return fmt.Errorf("error while saving url: %w", err)
+		logger.Sugaarz.Errorf("error while saving url: %w", dbErr)
+		return false, fmt.Errorf("error while saving url: %w", dbErr)
 	}
-	return nil
+	return false, nil
 }
 
 type URLPair struct {
@@ -66,7 +70,7 @@ func (d *DataBase) SaveBatch(batch []URLPair) error {
 		_, err := tx.ExecContext(context.Background(), ""+
 			"INSERT INTO url (short_url, long_url) "+
 			"VALUES ($1, $2) "+
-			"ON CONFLICT (short_url) DO NOTHING", pair.URLHash, pair.LongURL)
+			"ON CONFLICT (long_url) DO NOTHING", pair.URLHash, pair.LongURL)
 		if err != nil {
 			_ = tx.Rollback()
 			return fmt.Errorf("error while creating SQL statement in transaction: %w", err)

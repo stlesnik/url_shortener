@@ -21,11 +21,11 @@ func (s *InMemoryRepository) Ping() error {
 	return fmt.Errorf("in memory repository is empty")
 }
 
-func (s *InMemoryRepository) Save(short string, long string) error {
+func (s *InMemoryRepository) Save(short string, long string) (isDouble bool, err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.data[short] = long
-	return nil
+	return false, nil
 }
 
 func (s *InMemoryRepository) Get(short string) (string, bool) {

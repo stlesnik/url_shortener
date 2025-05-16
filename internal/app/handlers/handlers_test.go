@@ -131,12 +131,55 @@ func TestHandler_SaveURL(t *testing.T) {
 	}
 }
 
+func TestHandler_SaveURL_Conflict_WithMockRepo(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	m := mocks.NewMockRepository(ctrl)
+
+	const longURL = "http://example.com"
+	gomock.InOrder(
+		m.EXPECT().
+			Save(gomock.Any(), longURL).
+			Return(false, nil).
+			Times(1),
+		m.EXPECT().
+			Save(gomock.Any(), longURL).
+			Return(true, nil).
+			Times(1),
+	)
+
+	cfg := &config.Config{BaseURL: "http://localhost:8000"}
+	err := logger.InitLogger(cfg.Environment)
+	require.NoError(t, err)
+	service := services.NewURLShortenerService(m, cfg)
+	handler := NewHandler(service)
+
+	req1 := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(longURL))
+	req1.Header.Add("Content-Type", "text/plain")
+	w1 := httptest.NewRecorder()
+	handler.SaveURL(w1, req1)
+
+	require.Equal(t, http.StatusCreated, w1.Code)
+	assert.Equal(t, "text/plain", w1.Header().Get("Content-Type"))
+	body1, _ := io.ReadAll(w1.Result().Body)
+
+	req2 := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(longURL))
+	req2.Header.Add("Content-Type", "text/plain")
+	w2 := httptest.NewRecorder()
+	handler.SaveURL(w2, req2)
+
+	require.Equal(t, http.StatusConflict, w2.Code)
+	assert.Equal(t, "text/plain", w2.Header().Get("Content-Type"))
+	body2, _ := io.ReadAll(w2.Result().Body)
+	assert.Equal(t, body1, body2)
+}
+
 func TestHandler_GetLongURL(t *testing.T) {
 	cfg := &config.Config{BaseURL: "http://localhost:8000"} // Добавляем конфиг
 	err := logger.InitLogger(cfg.Environment)
 	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
-	_ = repo.Save("_SGMGLQIsIM=", "http://mbrgaoyhv.yandex")
+	_, _ = repo.Save("_SGMGLQIsIM=", "http://mbrgaoyhv.yandex")
 	service := services.NewURLShortenerService(repo, cfg)
 	handler := NewHandler(service)
 

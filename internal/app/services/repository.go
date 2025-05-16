@@ -4,7 +4,7 @@ import "github.com/stlesnik/url_shortener/internal/app/repository"
 
 type Repository interface {
 	Ping() error
-	Save(shortURL string, longURLStr string) error
+	Save(shortURL string, longURLStr string) (bool, error)
 	Get(shortURL string) (string, bool)
 	Close() error
 }

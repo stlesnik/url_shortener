@@ -45,7 +45,7 @@ func (h *Handler) SaveURL(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	//generate and save short url
-	shortURL, errText := h.service.CreateSavePrepareShortURL(longURLStr)
+	shortURL, isDouble, errText := h.service.CreateSavePrepareShortURL(longURLStr)
 	if errText != "" {
 		logger.Sugaarz.Errorw(errText)
 		WriteError(res, errText, http.StatusInternalServerError, true)
@@ -54,13 +54,18 @@ func (h *Handler) SaveURL(res http.ResponseWriter, req *http.Request) {
 
 	//generate response
 	res.Header().Set("Content-Type", "text/plain")
-	res.WriteHeader(http.StatusCreated)
+	if isDouble {
+		res.WriteHeader(http.StatusConflict)
+
+	} else {
+		res.WriteHeader(http.StatusCreated)
+
+	}
 	_, err = res.Write([]byte(shortURL))
 	if err != nil {
 		WriteError(res, "Failed to write short url into response", http.StatusInternalServerError, true)
 		return
 	}
-
 }
 
 func (h *Handler) GetLongURL(res http.ResponseWriter, req *http.Request) {
@@ -91,7 +96,7 @@ func (h *Handler) APIPrepareShortURL(res http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	shortURL, errText := h.service.CreateSavePrepareShortURL(apiReq.LongURL)
+	shortURL, isDouble, errText := h.service.CreateSavePrepareShortURL(apiReq.LongURL)
 	if errText != "" {
 		logger.Sugaarz.Errorw(errText)
 		WriteError(res, errText, http.StatusInternalServerError, true)
@@ -102,7 +107,13 @@ func (h *Handler) APIPrepareShortURL(res http.ResponseWriter, req *http.Request)
 		ShortURL: shortURL,
 	}
 	res.Header().Set("Content-Type", "application/json")
-	res.WriteHeader(http.StatusCreated)
+	if isDouble {
+		res.WriteHeader(http.StatusConflict)
+
+	} else {
+		res.WriteHeader(http.StatusCreated)
+
+	}
 	if err := json.NewEncoder(res).Encode(apiResp); err != nil {
 		logger.Sugaarz.Errorw("error encoding body", "err", err)
 		WriteError(res, "Failed to encode body", http.StatusInternalServerError, true)
