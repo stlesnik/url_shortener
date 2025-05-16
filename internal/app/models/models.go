@@ -11,11 +11,11 @@ type APIResponsePrepareShURL struct {
 
 // APIPrepareBatchShortURL
 type APIRequestPrepareBatchShURL struct {
-	CorrelationId string `json:"correlation_id"`
+	CorrelationID string `json:"correlation_id"`
 	LongURL       string `json:"original_url"`
 }
 
 type APIResponsePrepareBatchShURL struct {
-	CorrelationId string `json:"correlation_id"`
+	CorrelationID string `json:"correlation_id"`
 	ShortURL      string `json:"short_url"`
 }

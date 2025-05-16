@@ -138,7 +138,7 @@ func (h *Handler) APIPrepareBatchShortURL(res http.ResponseWriter, req *http.Req
 			}
 			batch = append(batch, repository.URLPair{URLHash: urlHash, LongURL: obj.LongURL})
 			apiBatchResp = append(apiBatchResp, models.APIResponsePrepareBatchShURL{
-				CorrelationId: obj.CorrelationId, ShortURL: h.service.PrepareShortURL(urlHash)})
+				CorrelationID: obj.CorrelationID, ShortURL: h.service.PrepareShortURL(urlHash)})
 		}
 	}
 	//save batch
