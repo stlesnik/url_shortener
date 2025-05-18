@@ -24,8 +24,8 @@ func TestHandler_getLongURLFromReq(t *testing.T) {
 	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
 
-	service := services.NewURLShortenerService(repo, cfg)
-	handler := NewHandler(service)
+	service := services.New(repo, cfg)
+	handler := New(service)
 
 	type expected struct {
 		longURLStr string
@@ -75,8 +75,8 @@ func TestHandler_SaveURL(t *testing.T) {
 	err := logger.InitLogger(cfg.Environment)
 	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
-	service := services.NewURLShortenerService(repo, cfg)
-	handler := NewHandler(service)
+	service := services.New(repo, cfg)
+	handler := New(service)
 
 	type expected struct {
 		contentType string
@@ -151,8 +151,8 @@ func TestHandler_SaveURL_Conflict_WithMockRepo(t *testing.T) {
 	cfg := &config.Config{BaseURL: "http://localhost:8000"}
 	err := logger.InitLogger(cfg.Environment)
 	require.NoError(t, err)
-	service := services.NewURLShortenerService(m, cfg)
-	handler := NewHandler(service)
+	service := services.New(m, cfg)
+	handler := New(service)
 
 	req1 := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(longURL))
 	req1.Header.Add("Content-Type", "text/plain")
@@ -197,8 +197,8 @@ func TestHandler_GetLongURL(t *testing.T) {
 	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
 	_, _ = repo.Save(context.Background(), "_SGMGLQIsIM=", "http://mbrgaoyhv.yandex")
-	service := services.NewURLShortenerService(repo, cfg)
-	handler := NewHandler(service)
+	service := services.New(repo, cfg)
+	handler := New(service)
 
 	type expected struct {
 		statusCode int
@@ -252,8 +252,8 @@ func TestHandler_ApiPrepareShortURL(t *testing.T) {
 	err := logger.InitLogger(cfg.Environment)
 	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
-	service := services.NewURLShortenerService(repo, cfg)
-	handler := NewHandler(service)
+	service := services.New(repo, cfg)
+	handler := New(service)
 
 	tests := []struct {
 		name         string
@@ -300,8 +300,8 @@ func TestHandler_PingDB(t *testing.T) {
 	m := mocks.NewMockRepository(ctrl)
 	m.EXPECT().Ping(context.Background()).Return(nil)
 	require.NoError(t, err)
-	service := services.NewURLShortenerService(m, cfg)
-	handler := NewHandler(service)
+	service := services.New(m, cfg)
+	handler := New(service)
 
 	t.Run("Mock test db", func(t *testing.T) {
 		r := httptest.NewRequest(http.MethodGet, "/ping", nil)

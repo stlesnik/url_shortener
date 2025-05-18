@@ -21,11 +21,15 @@ type DataBase struct {
 }
 
 func NewDataBase(dsn string) (*DataBase, error) {
-	db := sqlx.MustOpen("pgx", dsn)
-	err := warmupDB(db)
+	db, err := sqlx.Open("pgx", dsn)
 	if err != nil {
-		logger.Sugaarz.Errorf("error while warming db up: %w", err)
-		return nil, fmt.Errorf("error while warming db up: %w", err)
+		logger.Sugaarz.Errorf("error while opening db: %w: %v", ErrOpenDB, err)
+		return nil, fmt.Errorf("error while opening db: %w: %v", ErrOpenDB, err)
+	}
+
+	if err := warmupDB(db); err != nil {
+		logger.Sugaarz.Errorf("error while warming db up: %w: %v", ErrWarmDB, err)
+		return nil, fmt.Errorf("error while warming db up: %w: %v", ErrWarmDB, err)
 	}
 	return &DataBase{db: db}, nil
 }
@@ -39,11 +43,8 @@ func warmupDB(db *sqlx.DB) error {
 }
 
 func (d *DataBase) Ping(ctx context.Context) error {
-	if d.db == nil {
-		return fmt.Errorf("database does not exist")
-	}
 	if err := d.db.PingContext(ctx); err != nil {
-		return fmt.Errorf("error while ping to db: %w", err)
+		return fmt.Errorf("error while ping to db: %w: %v", ErrPingDB, err)
 	}
 	return nil
 }
@@ -56,8 +57,8 @@ func (d *DataBase) Save(ctx context.Context, short string, long string) (isDoubl
 			logger.Sugaarz.Infow("this short url already exists", "short", short, "long", long)
 			return true, nil
 		}
-		logger.Sugaarz.Errorf("error while saving url: %w", dbErr)
-		return false, fmt.Errorf("error while saving url: %w", dbErr)
+		logger.Sugaarz.Errorf("error while saving url: %w: %v", ErrSaveURL, dbErr)
+		return false, fmt.Errorf("error while saving url: %w: %v", ErrSaveURL, dbErr)
 	}
 	return false, nil
 }
@@ -70,7 +71,7 @@ type URLPair struct {
 func (d *DataBase) SaveBatch(ctx context.Context, batch []URLPair) error {
 	tx, err := d.db.Begin()
 	if err != nil {
-		return fmt.Errorf("error while beginning transaction: %w", err)
+		return fmt.Errorf("error while beginning transaction: %w: %v", ErrBeginTransaction, err)
 	}
 
 	for _, pair := range batch {
@@ -94,7 +95,7 @@ func (d *DataBase) Get(ctx context.Context, short string) (string, error) {
 		return "", ErrURLNotFound
 	}
 	if err != nil {
-		return "", fmt.Errorf("error while getting short url: %w", err)
+		return "", fmt.Errorf("error while getting short url: %w: %v", ErrGetURL, err)
 	}
 	logger.Sugaarz.Infow("Got short url from db", "short", short, "long", longURL)
 	return longURL, nil

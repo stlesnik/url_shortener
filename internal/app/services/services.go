@@ -16,7 +16,7 @@ type URLShortenerService struct {
 	cfg  *config.Config
 }
 
-func NewURLShortenerService(repo Repository, cfg *config.Config) *URLShortenerService {
+func New(repo Repository, cfg *config.Config) *URLShortenerService {
 	return &URLShortenerService{repo, cfg}
 }
 

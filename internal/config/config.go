@@ -13,7 +13,7 @@ type Config struct {
 	DatabaseDSN     string `env:"DATABASE_DSN"`
 }
 
-func NewConfig() (*Config, error) {
+func New() (*Config, error) {
 	cfg := &Config{}
 
 	defaultAddress := "localhost:8080"

@@ -11,7 +11,7 @@ import (
 
 func main() {
 	// конфиг
-	cfg, err := config.NewConfig()
+	cfg, err := config.New()
 	if err != nil {
 		log.Fatalf("Не получилось обработать конфиг: %s", err)
 		return
@@ -38,7 +38,7 @@ func main() {
 		}
 	}()
 
-	srv := server.NewServer(repo, cfg)
+	srv := server.New(repo, cfg)
 
 	log.Printf("Сервер запущен на %s", cfg.ServerAddress)
 	err = srv.Start()

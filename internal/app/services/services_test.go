@@ -66,7 +66,7 @@ func TestServices_CreateSavePrepareShortURL(t *testing.T) {
 				storage: make(map[string]string),
 				fail:    tt.repoFailure,
 			}
-			service := NewURLShortenerService(repo, cfg)
+			service := New(repo, cfg)
 
 			shortURL, _, errMsg := service.CreateSavePrepareShortURL(context.Background(), tt.longURL)
 
@@ -83,7 +83,7 @@ func TestServices_CreateSavePrepareShortURL(t *testing.T) {
 }
 
 func TestServices_CreateShortURLHash(t *testing.T) {
-	service := NewURLShortenerService(nil, &config.Config{})
+	service := New(nil, &config.Config{})
 
 	t.Run("Hash generation", func(t *testing.T) {
 		url1 := "https://google.com"
@@ -120,7 +120,7 @@ func TestServices_SaveShortURL(t *testing.T) {
 				storage: make(map[string]string),
 				fail:    tt.repoFailure,
 			}
-			service := NewURLShortenerService(repo, cfg)
+			service := New(repo, cfg)
 
 			_, err := service.SaveShortURL(context.Background(), hash, longURL)
 
@@ -161,7 +161,7 @@ func TestServices_SaveBatchShortURL(t *testing.T) {
 				fail:    tt.repoFailure,
 			}
 
-			service := NewURLShortenerService(repo, cfg)
+			service := New(repo, cfg)
 
 			err := service.SaveBatchShortURL(context.Background(), urlPairList)
 
@@ -176,7 +176,7 @@ func TestServices_SaveBatchShortURL(t *testing.T) {
 
 func TestServices_PrepareShortURL(t *testing.T) {
 	cfg := &config.Config{BaseURL: "http://localhost:8080"}
-	service := NewURLShortenerService(nil, cfg)
+	service := New(nil, cfg)
 	hash := "abc123"
 
 	result := service.PrepareShortURL(hash)
@@ -203,7 +203,7 @@ func TestServices_GetLongURLFromDB(t *testing.T) {
 			if tt.prepopulate {
 				repo.storage[tt.hash] = tt.wantURL
 			}
-			service := NewURLShortenerService(repo, cfg)
+			service := New(repo, cfg)
 
 			result, err := service.GetLongURLFromDB(context.Background(), tt.hash)
 

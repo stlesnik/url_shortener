@@ -17,7 +17,7 @@ type Handler struct {
 	service *services.URLShortenerService // Вместо прямого доступа к repo и cfg
 }
 
-func NewHandler(service *services.URLShortenerService) *Handler {
+func New(service *services.URLShortenerService) *Handler {
 	return &Handler{service: service}
 }
 

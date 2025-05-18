@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
+	"github.com/stlesnik/url_shortener/internal/logger"
 	"os"
 	"sync"
 )
@@ -48,6 +49,7 @@ func (f *FileStorage) Ping(_ context.Context) error {
 func (f *FileStorage) Save(ctx context.Context, short string, long string) (isDouble bool, err error) {
 	select {
 	case <-ctx.Done():
+		logger.Sugaarz.Info("Client closed connection while in url Save func")
 		return false, ctx.Err()
 	default:
 	}

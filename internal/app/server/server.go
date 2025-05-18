@@ -13,7 +13,7 @@ type Server struct {
 	cfg    *config.Config
 }
 
-func NewServer(repo services.Repository, cfg *config.Config) *Server {
+func New(repo services.Repository, cfg *config.Config) *Server {
 	s := &Server{
 		router: chi.NewRouter(),
 		repo:   repo,
