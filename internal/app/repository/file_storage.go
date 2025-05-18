@@ -65,12 +65,15 @@ func (f *FileStorage) Save(short string, long string) (isDouble bool, err error)
 	return false, err
 }
 
-func (f *FileStorage) Get(short string) (string, bool) {
+func (f *FileStorage) Get(short string) (string, error) {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
 
-	val, ok := f.data[short]
-	return val, ok
+	val, exists := f.data[short]
+	if !exists {
+		return "", ErrURLNotFound
+	}
+	return val, nil
 }
 
 func (f *FileStorage) Close() error {

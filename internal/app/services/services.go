@@ -78,11 +78,8 @@ func (s *URLShortenerService) PrepareShortURL(urlHash string) string {
 }
 
 func (s *URLShortenerService) GetLongURLFromDB(URLHash string) (string, error) {
-	longURL, exists := s.repo.Get(URLHash)
-	if !exists {
-		return "", ErrURLNotFound
-	}
-	return longURL, nil
+	longURL, err := s.repo.Get(URLHash)
+	return longURL, err
 }
 
 func (s *URLShortenerService) PingDB() error {

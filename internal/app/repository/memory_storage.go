@@ -28,11 +28,14 @@ func (s *InMemoryRepository) Save(short string, long string) (isDouble bool, err
 	return false, nil
 }
 
-func (s *InMemoryRepository) Get(short string) (string, bool) {
+func (s *InMemoryRepository) Get(short string) (string, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	long, exists := s.data[short]
-	return long, exists
+	val, exists := s.data[short]
+	if !exists {
+		return "", ErrURLNotFound
+	}
+	return val, nil
 }
 
 func (s *InMemoryRepository) Close() error { return nil }

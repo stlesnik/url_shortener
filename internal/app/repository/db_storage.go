@@ -80,18 +80,17 @@ func (d *DataBase) SaveBatch(batch []URLPair) error {
 	return tx.Commit()
 }
 
-func (d *DataBase) Get(short string) (string, bool) {
+func (d *DataBase) Get(short string) (string, error) {
 	var longURL string
 	err := d.db.GetContext(context.Background(), &longURL, "SELECT long_url FROM url WHERE short_url = $1", short)
 	if errors.Is(err, sql.ErrNoRows) {
-		return "", false
+		return "", ErrURLNotFound
 	}
 	if err != nil {
-		logger.Sugaarz.Errorf("error while fetching short url: %w", err)
-		return "", false
+		return "", fmt.Errorf("error while getting short url: %w", err)
 	}
 	logger.Sugaarz.Infow("Got short url from db", "short", short, "long", longURL)
-	return longURL, true
+	return longURL, nil
 }
 
 func (d *DataBase) Close() error {

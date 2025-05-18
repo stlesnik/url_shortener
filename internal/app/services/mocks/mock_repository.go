@@ -48,11 +48,11 @@ func (mr *MockRepositoryMockRecorder) Close() *gomock.Call {
 }
 
 // Get mocks base method.
-func (m *MockRepository) Get(arg0 string) (string, bool) {
+func (m *MockRepository) Get(arg0 string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", arg0)
 	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(bool)
+	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 

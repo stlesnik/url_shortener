@@ -25,9 +25,12 @@ func (m *MockRepository) Save(shortURL, longURL string) (bool, error) {
 	return false, nil
 }
 
-func (m *MockRepository) Get(shortURL string) (string, bool) {
+func (m *MockRepository) Get(shortURL string) (string, error) {
 	val, exists := m.storage[shortURL]
-	return val, exists
+	if !exists {
+		return "", repository.ErrURLNotFound
+	}
+	return val, nil
 }
 
 func (m *MockRepository) Close() error {
