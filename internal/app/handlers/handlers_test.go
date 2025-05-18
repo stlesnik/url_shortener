@@ -139,11 +139,11 @@ func TestHandler_SaveURL_Conflict_WithMockRepo(t *testing.T) {
 	const longURL = "http://example.com"
 	gomock.InOrder(
 		m.EXPECT().
-			Save(gomock.Any(), longURL).
+			Save(context.Background(), gomock.Any(), longURL).
 			Return(false, nil).
 			Times(1),
 		m.EXPECT().
-			Save(gomock.Any(), longURL).
+			Save(context.Background(), gomock.Any(), longURL).
 			Return(true, nil).
 			Times(1),
 	)
@@ -196,7 +196,7 @@ func TestHandler_GetLongURL(t *testing.T) {
 	err := logger.InitLogger(cfg.Environment)
 	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
-	_, _ = repo.Save("_SGMGLQIsIM=", "http://mbrgaoyhv.yandex")
+	_, _ = repo.Save(context.Background(), "_SGMGLQIsIM=", "http://mbrgaoyhv.yandex")
 	service := services.NewURLShortenerService(repo, cfg)
 	handler := NewHandler(service)
 
@@ -298,7 +298,7 @@ func TestHandler_PingDB(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	m := mocks.NewMockRepository(ctrl)
-	m.EXPECT().Ping().Return(nil)
+	m.EXPECT().Ping(context.Background()).Return(nil)
 	require.NoError(t, err)
 	service := services.NewURLShortenerService(m, cfg)
 	handler := NewHandler(service)

@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"fmt"
 	"github.com/stlesnik/url_shortener/internal/app/repository"
 	"github.com/stlesnik/url_shortener/internal/config"
@@ -18,7 +19,7 @@ func NewRepository(cfg *config.Config) (Repository, error) {
 			if dbErr != nil {
 				return nil, fmt.Errorf("не получилось подключиться к бд: %w", dbErr)
 			}
-			pingErr := db.Ping()
+			pingErr := db.Ping(context.Background())
 			if pingErr != nil {
 				return nil, fmt.Errorf("не получилось пингануть бд: %w", pingErr)
 			}

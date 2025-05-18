@@ -45,7 +45,7 @@ func (h *Handler) SaveURL(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	//generate and save short url
-	shortURL, isDouble, errText := h.service.CreateSavePrepareShortURL(longURLStr)
+	shortURL, isDouble, errText := h.service.CreateSavePrepareShortURL(req.Context(), longURLStr)
 	if errText != "" {
 		logger.Sugaarz.Errorw(errText)
 		WriteError(res, errText, http.StatusInternalServerError, true)
@@ -70,7 +70,7 @@ func (h *Handler) SaveURL(res http.ResponseWriter, req *http.Request) {
 
 func (h *Handler) GetLongURL(res http.ResponseWriter, req *http.Request) {
 	URLHash := chi.URLParam(req, "id")
-	longURLStr, err := h.service.GetLongURLFromDB(URLHash)
+	longURLStr, err := h.service.GetLongURLFromDB(req.Context(), URLHash)
 	if err == nil {
 		res.Header().Set("Location", longURLStr)
 		res.WriteHeader(http.StatusTemporaryRedirect)
@@ -96,7 +96,7 @@ func (h *Handler) APIPrepareShortURL(res http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	shortURL, isDouble, errText := h.service.CreateSavePrepareShortURL(apiReq.LongURL)
+	shortURL, isDouble, errText := h.service.CreateSavePrepareShortURL(req.Context(), apiReq.LongURL)
 	if errText != "" {
 		logger.Sugaarz.Errorw(errText)
 		WriteError(res, errText, http.StatusInternalServerError, true)
@@ -156,7 +156,7 @@ func (h *Handler) APIPrepareBatchShortURL(res http.ResponseWriter, req *http.Req
 		}
 	}
 	//save batch
-	txErr := h.service.SaveBatchShortURL(batch)
+	txErr := h.service.SaveBatchShortURL(req.Context(), batch)
 	if txErr != nil {
 		logger.Sugaarz.Errorw("error while saving batch", "err", txErr)
 		WriteError(res, "error while saving batch", http.StatusInternalServerError, true)
@@ -177,9 +177,9 @@ func (h *Handler) APIPrepareBatchShortURL(res http.ResponseWriter, req *http.Req
 	logger.Sugaarz.Debugw("sent APISaveBatchURL response")
 }
 
-func (h *Handler) PingDB(res http.ResponseWriter, _ *http.Request) {
+func (h *Handler) PingDB(res http.ResponseWriter, req *http.Request) {
 	logger.Sugaarz.Debugw("got PingDB request")
-	err := h.service.PingDB()
+	err := h.service.PingDB(req.Context())
 	if err == nil {
 		res.WriteHeader(http.StatusOK)
 	} else {

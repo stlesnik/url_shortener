@@ -34,18 +34,18 @@ func warmupDB(db *sqlx.DB) error {
 	return nil
 }
 
-func (d *DataBase) Ping() error {
+func (d *DataBase) Ping(ctx context.Context) error {
 	if d.db == nil {
 		return fmt.Errorf("database does not exist")
 	}
-	if err := d.db.Ping(); err != nil {
+	if err := d.db.PingContext(ctx); err != nil {
 		return fmt.Errorf("error while ping to db: %w", err)
 	}
 	return nil
 }
 
-func (d *DataBase) Save(short string, long string) (isDouble bool, err error) {
-	_, dbErr := d.db.ExecContext(context.Background(), "INSERT INTO url (short_url, long_url) VALUES ($1, $2)", short, long)
+func (d *DataBase) Save(ctx context.Context, short string, long string) (isDouble bool, err error) {
+	_, dbErr := d.db.ExecContext(ctx, "INSERT INTO url (short_url, long_url) VALUES ($1, $2)", short, long)
 	if dbErr != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(dbErr, &pgErr) && pgErr.Code == "23505" {
@@ -63,11 +63,11 @@ type URLPair struct {
 	LongURL string
 }
 
-func (d *DataBase) SaveBatch(batch []URLPair) error {
+func (d *DataBase) SaveBatch(ctx context.Context, batch []URLPair) error {
 	tx := d.db.MustBegin()
 
 	for _, pair := range batch {
-		_, err := tx.ExecContext(context.Background(), ""+
+		_, err := tx.ExecContext(ctx, ""+
 			"INSERT INTO url (short_url, long_url) "+
 			"VALUES ($1, $2) "+
 			"ON CONFLICT (long_url) DO NOTHING", pair.URLHash, pair.LongURL)
@@ -80,9 +80,9 @@ func (d *DataBase) SaveBatch(batch []URLPair) error {
 	return tx.Commit()
 }
 
-func (d *DataBase) Get(short string) (string, error) {
+func (d *DataBase) Get(ctx context.Context, short string) (string, error) {
 	var longURL string
-	err := d.db.GetContext(context.Background(), &longURL, "SELECT long_url FROM url WHERE short_url = $1", short)
+	err := d.db.GetContext(ctx, &longURL, "SELECT long_url FROM url WHERE short_url = $1", short)
 	if errors.Is(err, sql.ErrNoRows) {
 		return "", ErrURLNotFound
 	}

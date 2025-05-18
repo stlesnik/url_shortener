@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"fmt"
 	"sync"
 )
@@ -14,21 +15,21 @@ func NewInMemoryRepository() *InMemoryRepository {
 	return &InMemoryRepository{data: make(map[string]string)}
 }
 
-func (s *InMemoryRepository) Ping() error {
+func (s *InMemoryRepository) Ping(_ context.Context) error {
 	if s.data != nil {
 		return nil
 	}
 	return fmt.Errorf("in memory repository is empty")
 }
 
-func (s *InMemoryRepository) Save(short string, long string) (isDouble bool, err error) {
+func (s *InMemoryRepository) Save(_ context.Context, short string, long string) (isDouble bool, err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.data[short] = long
 	return false, nil
 }
 
-func (s *InMemoryRepository) Get(short string) (string, error) {
+func (s *InMemoryRepository) Get(_ context.Context, short string) (string, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	val, exists := s.data[short]

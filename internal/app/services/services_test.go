@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"github.com/stlesnik/url_shortener/internal/app/repository"
 	"github.com/stlesnik/url_shortener/internal/config"
 	"github.com/stlesnik/url_shortener/internal/logger"
@@ -15,9 +16,9 @@ type MockRepository struct {
 	fail    bool
 }
 
-func (m *MockRepository) Ping() error { return nil }
+func (m *MockRepository) Ping(_ context.Context) error { return nil }
 
-func (m *MockRepository) Save(shortURL, longURL string) (bool, error) {
+func (m *MockRepository) Save(_ context.Context, shortURL, longURL string) (bool, error) {
 	if m.fail {
 		return false, ErrSave
 	}
@@ -25,7 +26,7 @@ func (m *MockRepository) Save(shortURL, longURL string) (bool, error) {
 	return false, nil
 }
 
-func (m *MockRepository) Get(shortURL string) (string, error) {
+func (m *MockRepository) Get(_ context.Context, shortURL string) (string, error) {
 	val, exists := m.storage[shortURL]
 	if !exists {
 		return "", repository.ErrURLNotFound
@@ -67,7 +68,7 @@ func TestServices_CreateSavePrepareShortURL(t *testing.T) {
 			}
 			service := NewURLShortenerService(repo, cfg)
 
-			shortURL, _, errMsg := service.CreateSavePrepareShortURL(tt.longURL)
+			shortURL, _, errMsg := service.CreateSavePrepareShortURL(context.Background(), tt.longURL)
 
 			if tt.wantError {
 				assert.NotEmpty(t, errMsg)
@@ -121,7 +122,7 @@ func TestServices_SaveShortURL(t *testing.T) {
 			}
 			service := NewURLShortenerService(repo, cfg)
 
-			_, err := service.SaveShortURL(hash, longURL)
+			_, err := service.SaveShortURL(context.Background(), hash, longURL)
 
 			if tt.wantError {
 				assert.Error(t, err)
@@ -162,7 +163,7 @@ func TestServices_SaveBatchShortURL(t *testing.T) {
 
 			service := NewURLShortenerService(repo, cfg)
 
-			err := service.SaveBatchShortURL(urlPairList)
+			err := service.SaveBatchShortURL(context.Background(), urlPairList)
 
 			if tt.wantError {
 				assert.Error(t, err)
@@ -204,7 +205,7 @@ func TestServices_GetLongURLFromDB(t *testing.T) {
 			}
 			service := NewURLShortenerService(repo, cfg)
 
-			result, err := service.GetLongURLFromDB(tt.hash)
+			result, err := service.GetLongURLFromDB(context.Background(), tt.hash)
 
 			if tt.wantError {
 				assert.Error(t, err)

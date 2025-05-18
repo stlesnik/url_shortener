@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"github.com/stlesnik/url_shortener/internal/app/repository"
@@ -19,12 +20,12 @@ func NewURLShortenerService(repo Repository, cfg *config.Config) *URLShortenerSe
 	return &URLShortenerService{repo, cfg}
 }
 
-func (s *URLShortenerService) CreateSavePrepareShortURL(longURL string) (string, bool, string) {
+func (s *URLShortenerService) CreateSavePrepareShortURL(ctx context.Context, longURL string) (string, bool, string) {
 	urlHash, err := s.CreateShortURLHash(longURL)
 	if err != nil {
 		return "", false, "Failed to create short URL, err: " + err.Error()
 	}
-	isDouble, err := s.SaveShortURL(urlHash, longURL)
+	isDouble, err := s.SaveShortURL(ctx, urlHash, longURL)
 	if err != nil {
 		return "", false, "Failed to save short url, err: " + err.Error()
 	}
@@ -41,22 +42,22 @@ func (s *URLShortenerService) CreateShortURLHash(longURL string) (string, error)
 	return base64.URLEncoding.EncodeToString(h.Sum(nil)), nil
 }
 
-func (s *URLShortenerService) SaveShortURL(urlHash, longURL string) (isDouble bool, err error) {
-	isDouble, err = s.repo.Save(urlHash, longURL)
+func (s *URLShortenerService) SaveShortURL(ctx context.Context, urlHash, longURL string) (isDouble bool, err error) {
+	isDouble, err = s.repo.Save(ctx, urlHash, longURL)
 	return
 }
 
-func (s *URLShortenerService) SaveBatchShortURL(urlPairList []repository.URLPair) error {
+func (s *URLShortenerService) SaveBatchShortURL(ctx context.Context, urlPairList []repository.URLPair) error {
 	if bSaver, ok := s.repo.(BatchSaver); ok {
 		logger.Sugaarz.Debugw("saving batch urls with BatchSaver")
-		err := bSaver.SaveBatch(urlPairList)
+		err := bSaver.SaveBatch(ctx, urlPairList)
 		if err != nil {
 			return err
 		}
 	} else {
 		logger.Sugaarz.Debugw("saving batch urls ordinary way")
 		for _, urlPair := range urlPairList {
-			_, err := s.repo.Save(urlPair.URLHash, urlPair.LongURL)
+			_, err := s.repo.Save(ctx, urlPair.URLHash, urlPair.LongURL)
 			if err != nil {
 				return err
 			}
@@ -77,11 +78,11 @@ func (s *URLShortenerService) PrepareShortURL(urlHash string) string {
 	return fmt.Sprintf("%s/%s", s.cfg.BaseURL, urlHash)
 }
 
-func (s *URLShortenerService) GetLongURLFromDB(URLHash string) (string, error) {
-	longURL, err := s.repo.Get(URLHash)
+func (s *URLShortenerService) GetLongURLFromDB(ctx context.Context, URLHash string) (string, error) {
+	longURL, err := s.repo.Get(ctx, URLHash)
 	return longURL, err
 }
 
-func (s *URLShortenerService) PingDB() error {
-	return s.repo.Ping()
+func (s *URLShortenerService) PingDB(ctx context.Context) error {
+	return s.repo.Ping(ctx)
 }

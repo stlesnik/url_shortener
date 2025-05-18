@@ -2,6 +2,7 @@ package repository
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
@@ -37,14 +38,20 @@ func NewFileStorage(path string) (*FileStorage, error) {
 	return fs, nil
 }
 
-func (f *FileStorage) Ping() error {
+func (f *FileStorage) Ping(_ context.Context) error {
 	if f.data != nil {
 		return nil
 	}
-	return fmt.Errorf("in memory repository is empty")
+	return fmt.Errorf("file repository is empty")
 }
 
-func (f *FileStorage) Save(short string, long string) (isDouble bool, err error) {
+func (f *FileStorage) Save(ctx context.Context, short string, long string) (isDouble bool, err error) {
+	select {
+	case <-ctx.Done():
+		return false, ctx.Err()
+	default:
+	}
+
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
@@ -65,7 +72,7 @@ func (f *FileStorage) Save(short string, long string) (isDouble bool, err error)
 	return false, err
 }
 
-func (f *FileStorage) Get(short string) (string, error) {
+func (f *FileStorage) Get(_ context.Context, short string) (string, error) {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
 
