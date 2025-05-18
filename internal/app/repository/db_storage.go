@@ -87,7 +87,8 @@ func (d *DataBase) Get(short string) (string, bool) {
 		return "", false
 	}
 	if err != nil {
-		panic(err)
+		logger.Sugaarz.Errorf("error while fetching short url: %w", err)
+		return "", false
 	}
 	logger.Sugaarz.Infow("Got short url from db", "short", short, "long", longURL)
 	return longURL, true
