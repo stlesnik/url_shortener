@@ -26,20 +26,7 @@ func NewDataBase(dsn string) (*DataBase, error) {
 		logger.Sugaarz.Errorf("error while opening db: %w: %v", ErrOpenDB, err)
 		return nil, fmt.Errorf("error while opening db: %w: %v", ErrOpenDB, err)
 	}
-
-	if err := warmupDB(db); err != nil {
-		logger.Sugaarz.Errorf("error while warming db up: %w: %v", ErrWarmDB, err)
-		return nil, fmt.Errorf("error while warming db up: %w: %v", ErrWarmDB, err)
-	}
 	return &DataBase{db: db}, nil
-}
-
-func warmupDB(db *sqlx.DB) error {
-	_ = db.MustExecContext(context.Background(), "CREATE TABLE IF NOT EXISTS url("+
-		"id serial primary key,"+
-		"short_url varchar not null,"+
-		"long_url varchar not null unique)")
-	return nil
 }
 
 func (d *DataBase) Ping(ctx context.Context) error {

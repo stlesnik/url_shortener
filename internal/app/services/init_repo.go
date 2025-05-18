@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/stlesnik/url_shortener/internal/app/repository"
 	"github.com/stlesnik/url_shortener/internal/config"
+	"github.com/stlesnik/url_shortener/internal/migrator"
 )
 
 // db
@@ -15,6 +16,8 @@ func NewRepository(cfg *config.Config) (Repository, error) {
 	switch {
 	case cfg.DatabaseDSN != "":
 		{
+			migrator.Run(cfg.DatabaseDSN)
+
 			db, dbErr := repository.NewDataBase(cfg.DatabaseDSN)
 			if dbErr != nil {
 				return nil, fmt.Errorf("не получилось подключиться к бд: %w", dbErr)
