@@ -12,6 +12,10 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
+const (
+	ErrCodeUniqueViolation = "23505" // unique_violation
+)
+
 type DataBase struct {
 	db *sqlx.DB
 }
@@ -48,7 +52,7 @@ func (d *DataBase) Save(ctx context.Context, short string, long string) (isDoubl
 	_, dbErr := d.db.ExecContext(ctx, "INSERT INTO url (short_url, long_url) VALUES ($1, $2)", short, long)
 	if dbErr != nil {
 		var pgErr *pgconn.PgError
-		if errors.As(dbErr, &pgErr) && pgErr.Code == "23505" {
+		if errors.As(dbErr, &pgErr) && pgErr.Code == ErrCodeUniqueViolation {
 			logger.Sugaarz.Infow("this short url already exists", "short", short, "long", long)
 			return true, nil
 		}
@@ -64,7 +68,10 @@ type URLPair struct {
 }
 
 func (d *DataBase) SaveBatch(ctx context.Context, batch []URLPair) error {
-	tx := d.db.MustBegin()
+	tx, err := d.db.Begin()
+	if err != nil {
+		return fmt.Errorf("error while beginning transaction: %w", err)
+	}
 
 	for _, pair := range batch {
 		_, err := tx.ExecContext(ctx, ""+
