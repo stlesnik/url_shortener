@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/stlesnik/url_shortener/internal/app/repository"
 	"github.com/stlesnik/url_shortener/internal/app/server"
 	"github.com/stlesnik/url_shortener/internal/app/services"
 	"github.com/stlesnik/url_shortener/internal/config"
@@ -24,38 +23,14 @@ func main() {
 	}
 	defer func() {
 		if err := logger.Sugaarz.Sync(); err != nil {
-			logger.Sugaarz.Errorw("Failed to sync logger", "error", err)
+			logger.Sugaarz.Errorw("failed to sync logger", "error", err)
 		}
 	}()
 
-	// db
-	var repo services.Repository
-
-	switch {
-	case cfg.DatabaseDSN != "":
-		{
-			db, dbErr := repository.NewDataBase(cfg.DatabaseDSN)
-			if dbErr != nil {
-				panic(fmt.Errorf("не получилось подключиться к бд: %w", dbErr))
-			}
-			pingErr := db.Ping()
-			if pingErr != nil {
-				panic(fmt.Errorf("не получилось пингануть бд: %w", pingErr))
-			}
-			repo = db
-		}
-	case cfg.FileStoragePath != "":
-		{
-			fStorage, err := repository.NewFileStorage(cfg.FileStoragePath)
-			if err != nil {
-				log.Fatalf("ошибка инициализации файлового хранилища: %v", err)
-			}
-			repo = fStorage
-		}
-	default:
-		{
-			repo = repository.NewInMemoryRepository()
-		}
+	repo, err := services.NewRepository(cfg)
+	if err != nil {
+		logger.Sugaarz.Errorw("failed to create repository", "error", err)
+		return
 	}
 	defer func() {
 		if err := repo.Close(); err != nil {
