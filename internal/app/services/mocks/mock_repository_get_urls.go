@@ -36,10 +36,10 @@ func (m *MockURLList) EXPECT() *MockURLListMockRecorder {
 }
 
 // GetURLList mocks base method.
-func (m *MockURLList) GetURLList(arg0 context.Context, arg1 string) ([]models.BaseURLResponse, error) {
+func (m *MockURLList) GetURLList(arg0 context.Context, arg1 string) ([]models.BaseURLDTO, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetURLList", arg0, arg1)
-	ret0, _ := ret[0].([]models.BaseURLResponse)
+	ret0, _ := ret[0].([]models.BaseURLDTO)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

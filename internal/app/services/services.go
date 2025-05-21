@@ -96,7 +96,15 @@ func (s *URLShortenerService) GetUserURLs(ctx context.Context, userID string) ([
 		if err != nil {
 			return nil, err
 		}
-		return urlList, nil
+
+		var resp []models.BaseURLResponse
+		for _, baseURLObj := range urlList {
+			resp = append(resp, models.BaseURLResponse{
+				ShortURL:    s.PrepareShortURL(baseURLObj.ShortURLHash),
+				OriginalURL: baseURLObj.OriginalURL,
+			})
+		}
+		return resp, nil
 	} else {
 		return nil, errors.New("not implemented error")
 	}

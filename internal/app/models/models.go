@@ -21,7 +21,11 @@ type APIResponsePrepareBatchShURL struct {
 }
 
 // APIGetUserURLs
+type BaseURLDTO struct {
+	ShortURLHash string `db:"short_url"`
+	OriginalURL  string `db:"original_url"`
+}
 type BaseURLResponse struct {
-	ShortURL    string `json:"short_url" db:"short_url"`
-	OriginalURL string `json:"original_url" db:"original_url"`
+	ShortURL    string `json:"short_url"`
+	OriginalURL string `json:"original_url"`
 }

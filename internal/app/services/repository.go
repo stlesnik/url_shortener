@@ -14,7 +14,7 @@ type Repository interface {
 }
 
 type URLList interface {
-	GetURLList(ctx context.Context, userID string) ([]models.BaseURLResponse, error)
+	GetURLList(ctx context.Context, userID string) ([]models.BaseURLDTO, error)
 }
 type BatchSaver interface {
 	SaveBatchURL(ctx context.Context, entries []repository.URLPair) error

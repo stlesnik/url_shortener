@@ -332,12 +332,12 @@ func TestHandler_APIGetUserURLs(t *testing.T) {
 			expectCall: func(fr *FullRepo) {
 				fr.MockURLList.EXPECT().
 					GetURLList(gomock.Any(), "user123").
-					Return([]models.BaseURLResponse{
-						{ShortURL: "http://localhost/abc", OriginalURL: "https://ya.ru"},
+					Return([]models.BaseURLDTO{
+						{ShortURLHash: "abc", OriginalURL: "https://ya.ru"},
 					}, nil)
 			},
 			expectedCode: http.StatusOK,
-			expectedBody: `[{"short_url":"http://localhost/abc","original_url":"https://ya.ru"}]`,
+			expectedBody: `[{"short_url": "http://localhost:8000/abc","original_url":"https://ya.ru"}]`,
 		},
 	}
 

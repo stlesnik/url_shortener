@@ -89,7 +89,7 @@ func (d *DataBase) GetURL(ctx context.Context, short string) (string, error) {
 	return longURL, nil
 }
 
-func (d *DataBase) GetURLList(ctx context.Context, userID string) (data []models.BaseURLResponse, err error) {
+func (d *DataBase) GetURLList(ctx context.Context, userID string) (data []models.BaseURLDTO, err error) {
 	err = d.db.SelectContext(ctx, &data, "SELECT original_url, short_url FROM url WHERE user_id = $1", userID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrURLNotFound

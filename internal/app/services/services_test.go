@@ -35,7 +35,7 @@ func (m *MockRepository) GetURL(_ context.Context, shortURL string) (string, err
 	return val, nil
 }
 
-func (m *MockRepository) GetURLList(_ context.Context, _ string) ([]models.BaseURLResponse, error) {
+func (m *MockRepository) GetURLList(_ context.Context, _ string) ([]models.BaseURLDTO, error) {
 	return nil, nil
 }
 
