@@ -369,6 +369,8 @@ func TestHandler_APIGetUserURLs(t *testing.T) {
 				body, _ := io.ReadAll(res.Body)
 				assert.JSONEq(t, tt.expectedBody, string(body))
 			}
+			err := res.Body.Close()
+			require.NoError(t, err)
 		})
 	}
 }

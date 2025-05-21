@@ -69,7 +69,7 @@ func createSignedCookie(userID string, secretKey string) (*http.Cookie, error) {
 	}
 
 	return &http.Cookie{
-		Name:     "auth",
+		Name:     "Authorization",
 		Value:    tokenString,
 		Expires:  time.Now().Add(TokenExp),
 		HttpOnly: true,
@@ -78,16 +78,16 @@ func createSignedCookie(userID string, secretKey string) (*http.Cookie, error) {
 }
 
 func getUserIDFromCookie(r *http.Request, secretKey string) (string, error) {
-	authCookie, err := r.Cookie("auth")
+	authCookie, err := r.Cookie("Authorization")
 	if err != nil {
 		if errors.Is(err, http.ErrNoCookie) {
 			return "", err
 		}
-		return "", fmt.Errorf("failed to get auth cookie: %w", err)
+		return "", fmt.Errorf("failed to get Authorization cookie: %w", err)
 	}
 
 	if authCookie.Value == "" {
-		return "", errors.New("empty auth cookie")
+		return "", errors.New("empty Authorization cookie")
 	}
 
 	claims := &Claims{}
