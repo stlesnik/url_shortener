@@ -339,6 +339,26 @@ func TestHandler_APIGetUserURLs(t *testing.T) {
 			expectedCode: http.StatusOK,
 			expectedBody: `[{"short_url": "http://localhost:8000/abc","original_url":"https://ya.ru"}]`,
 		},
+		{
+			name: "Нет записей - StatusNoContent",
+			setupRepo: func() services.Repository {
+				fr := &FullRepo{
+					mocks.NewMockRepository(ctrl),
+					mocks.NewMockURLList(ctrl),
+				}
+				return fr
+			},
+			setupContext: func(r *http.Request) *http.Request {
+				return r.WithContext(context.WithValue(r.Context(), middleware.UserIDKeyName, "user123"))
+			},
+			expectCall: func(fr *FullRepo) {
+				fr.MockURLList.EXPECT().
+					GetURLList(gomock.Any(), "user123").
+					Return([]models.BaseURLDTO{}, nil) // Пустой список
+			},
+			expectedCode: http.StatusNoContent,
+			expectedBody: "", // Ожидаем пустое тело
+		},
 	}
 
 	for _, tt := range tests {
@@ -368,6 +388,10 @@ func TestHandler_APIGetUserURLs(t *testing.T) {
 			if tt.expectedBody != "" {
 				body, _ := io.ReadAll(res.Body)
 				assert.JSONEq(t, tt.expectedBody, string(body))
+			} else {
+				// Проверяем что тело ответа пустое
+				body, _ := io.ReadAll(res.Body)
+				assert.Empty(t, string(body))
 			}
 			err := res.Body.Close()
 			require.NoError(t, err)

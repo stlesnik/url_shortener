@@ -206,20 +206,23 @@ func (h *Handler) APIGetUserURLs(res http.ResponseWriter, req *http.Request) {
 		WriteError(res, "cannot convert userID to string", http.StatusInternalServerError, true)
 		return
 	}
-	var urlsResponseOnj []models.BaseURLResponse
-	urlsResponseOnj, URLErr := h.service.GetUserURLs(req.Context(), userID)
+	var urlsResponseObj []models.BaseURLResponse
+	urlsResponseObj, URLErr := h.service.GetUserURLs(req.Context(), userID)
 	if URLErr != nil {
 		logger.Sugaarz.Errorw("error getting users urls", "err", URLErr)
 		WriteError(res, "error getting users urls", http.StatusNoContent, false)
 		return
 	}
-
-	res.Header().Set("Content-Type", "application/json")
-	res.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(res).Encode(urlsResponseOnj); err != nil {
-		logger.Sugaarz.Errorw("error encoding body", "err", err)
-		WriteError(res, "Failed to encode body", http.StatusInternalServerError, true)
-		return
+	if len(urlsResponseObj) > 0 {
+		res.Header().Set("Content-Type", "application/json")
+		res.WriteHeader(http.StatusOK)
+		if err := json.NewEncoder(res).Encode(urlsResponseObj); err != nil {
+			logger.Sugaarz.Errorw("error encoding body", "err", err)
+			WriteError(res, "Failed to encode body", http.StatusInternalServerError, true)
+			return
+		}
+	} else {
+		res.WriteHeader(http.StatusNoContent)
 	}
 	logger.Sugaarz.Debugw("sent APIGetUserURLs response")
 }

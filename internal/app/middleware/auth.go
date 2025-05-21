@@ -22,7 +22,7 @@ const (
 	UserIDKeyName contextKey = "userID"
 )
 
-func WithAuth(cfg *config.Config, createIfNot bool, next http.HandlerFunc) http.HandlerFunc {
+func WithAuth(cfg *config.Config, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, err := getUserIDFromCookie(r, cfg.AuthSecretKey)
 
@@ -30,7 +30,7 @@ func WithAuth(cfg *config.Config, createIfNot bool, next http.HandlerFunc) http.
 			logger.Sugaarz.Infow("Got user id from cookie", "userID", userID)
 			ctx := context.WithValue(r.Context(), UserIDKeyName, userID)
 			next.ServeHTTP(w, r.WithContext(ctx))
-		} else if createIfNot {
+		} else {
 			if errors.Is(err, http.ErrNoCookie) {
 				logger.Sugaarz.Infow("no token in cookie", "err", err)
 			}
@@ -46,8 +46,6 @@ func WithAuth(cfg *config.Config, createIfNot bool, next http.HandlerFunc) http.
 			w.Header().Set("Authorization", "Bearer "+cookie.Value)
 			ctx := context.WithValue(r.Context(), UserIDKeyName, newUserID)
 			next.ServeHTTP(w, r.WithContext(ctx))
-		} else {
-			next.ServeHTTP(w, r)
 		}
 	}
 }
