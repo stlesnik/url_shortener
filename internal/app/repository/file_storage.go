@@ -2,8 +2,11 @@ package repository
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/google/uuid"
+	"github.com/stlesnik/url_shortener/internal/logger"
 	"os"
 	"sync"
 )
@@ -35,12 +38,27 @@ func NewFileStorage(path string) (*FileStorage, error) {
 
 	return fs, nil
 }
-func (f *FileStorage) Save(short string, long string) error {
+
+func (f *FileStorage) Ping(_ context.Context) error {
+	if f.data != nil {
+		return nil
+	}
+	return fmt.Errorf("file repository is empty")
+}
+
+func (f *FileStorage) Save(ctx context.Context, short string, long string) (isDouble bool, err error) {
+	select {
+	case <-ctx.Done():
+		logger.Sugaarz.Info("Client closed connection while in url Save func")
+		return false, ctx.Err()
+	default:
+	}
+
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
 	if _, exists := f.data[short]; exists {
-		return nil
+		return true, nil
 	}
 
 	f.data[short] = long
@@ -49,19 +67,22 @@ func (f *FileStorage) Save(short string, long string) error {
 
 	b, err := json.Marshal(rec)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	_, err = f.file.Write(append(b, '\n'))
-	return err
+	return false, err
 }
 
-func (f *FileStorage) Get(short string) (string, bool) {
+func (f *FileStorage) Get(_ context.Context, short string) (string, error) {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
 
-	val, ok := f.data[short]
-	return val, ok
+	val, exists := f.data[short]
+	if !exists {
+		return "", ErrURLNotFound
+	}
+	return val, nil
 }
 
 func (f *FileStorage) Close() error {

@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"compress/gzip"
-	"github.com/stlesnik/url_shortener/cmd/logger"
+	"github.com/stlesnik/url_shortener/internal/logger"
 	"net/http"
 	"strings"
 )

@@ -3,10 +3,12 @@ package handlers
 import (
 	"context"
 	"github.com/go-chi/chi/v5"
-	"github.com/stlesnik/url_shortener/cmd/config"
-	"github.com/stlesnik/url_shortener/cmd/logger"
+	"github.com/golang/mock/gomock"
 	"github.com/stlesnik/url_shortener/internal/app/repository"
 	"github.com/stlesnik/url_shortener/internal/app/services"
+	"github.com/stlesnik/url_shortener/internal/app/services/mocks"
+	"github.com/stlesnik/url_shortener/internal/config"
+	"github.com/stlesnik/url_shortener/internal/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
@@ -21,8 +23,9 @@ func TestHandler_getLongURLFromReq(t *testing.T) {
 	err := logger.InitLogger(cfg.Environment)
 	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
-	service := services.NewURLShortenerService(repo, cfg)
-	handler := NewHandler(service)
+
+	service := services.New(repo, cfg)
+	handler := New(service)
 
 	type expected struct {
 		longURLStr string
@@ -46,7 +49,7 @@ func TestHandler_getLongURLFromReq(t *testing.T) {
 		{
 			name:     "bad url",
 			longURL:  "://mbrgaoyhv.yandex",
-			expected: expected{longURLStr: "", error: "got incorrect url to shorten: url=://mbrgaoyhv.yandex, err=parse \"://mbrgaoyhv.yandex\": missing protocol scheme: invalid url to shorten"},
+			expected: expected{longURLStr: "", error: "got incorrect url to shorten: url=://mbrgaoyhv.yandex, err=got incorrect url to shorten: url=://mbrgaoyhv.yandex, err= parse \"://mbrgaoyhv.yandex\": missing protocol scheme: invalid url to shorten"},
 		},
 	}
 
@@ -72,8 +75,8 @@ func TestHandler_SaveURL(t *testing.T) {
 	err := logger.InitLogger(cfg.Environment)
 	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
-	service := services.NewURLShortenerService(repo, cfg)
-	handler := NewHandler(service)
+	service := services.New(repo, cfg)
+	handler := New(service)
 
 	type expected struct {
 		contentType string
@@ -128,14 +131,74 @@ func TestHandler_SaveURL(t *testing.T) {
 	}
 }
 
+func TestHandler_SaveURL_Conflict_WithMockRepo(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	m := mocks.NewMockRepository(ctrl)
+
+	const longURL = "http://example.com"
+	gomock.InOrder(
+		m.EXPECT().
+			Save(context.Background(), gomock.Any(), longURL).
+			Return(false, nil).
+			Times(1),
+		m.EXPECT().
+			Save(context.Background(), gomock.Any(), longURL).
+			Return(true, nil).
+			Times(1),
+	)
+
+	cfg := &config.Config{BaseURL: "http://localhost:8000"}
+	err := logger.InitLogger(cfg.Environment)
+	require.NoError(t, err)
+	service := services.New(m, cfg)
+	handler := New(service)
+
+	req1 := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(longURL))
+	req1.Header.Add("Content-Type", "text/plain")
+	w1 := httptest.NewRecorder()
+	handler.SaveURL(w1, req1)
+
+	require.Equal(t, http.StatusCreated, w1.Code)
+	assert.Equal(t, "text/plain", w1.Header().Get("Content-Type"))
+	res1 := w1.Result()
+	body1, err := io.ReadAll(res1.Body)
+	require.NoError(t, err)
+	err = res1.Body.Close()
+	require.NoError(t, err)
+
+	req2 := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(longURL))
+	req2.Header.Add("Content-Type", "text/plain")
+	w2 := httptest.NewRecorder()
+	handler.SaveURL(w2, req2)
+
+	require.Equal(t, http.StatusConflict, w2.Code)
+	assert.Equal(t, "text/plain", w2.Header().Get("Content-Type"))
+	res2 := w2.Result()
+	body2, err := io.ReadAll(res2.Body)
+	require.NoError(t, err)
+	err = res2.Body.Close()
+	require.NoError(t, err)
+	assert.Equal(t, body1, body2)
+
+	err = w1.Result().Body.Close()
+	if err != nil {
+		panic(err)
+	}
+	err = w2.Result().Body.Close()
+	if err != nil {
+		panic(err)
+	}
+}
+
 func TestHandler_GetLongURL(t *testing.T) {
 	cfg := &config.Config{BaseURL: "http://localhost:8000"} // Добавляем конфиг
 	err := logger.InitLogger(cfg.Environment)
 	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
-	_ = repo.Save("_SGMGLQIsIM=", "http://mbrgaoyhv.yandex")
-	service := services.NewURLShortenerService(repo, cfg)
-	handler := NewHandler(service)
+	_, _ = repo.Save(context.Background(), "_SGMGLQIsIM=", "http://mbrgaoyhv.yandex")
+	service := services.New(repo, cfg)
+	handler := New(service)
 
 	type expected struct {
 		statusCode int
@@ -189,8 +252,8 @@ func TestHandler_ApiPrepareShortURL(t *testing.T) {
 	err := logger.InitLogger(cfg.Environment)
 	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
-	service := services.NewURLShortenerService(repo, cfg)
-	handler := NewHandler(service)
+	service := services.New(repo, cfg)
+	handler := New(service)
 
 	tests := []struct {
 		name         string
@@ -225,4 +288,27 @@ func TestHandler_ApiPrepareShortURL(t *testing.T) {
 			require.NoError(t, err)
 		})
 	}
+}
+
+func TestHandler_PingDB(t *testing.T) {
+	cfg := &config.Config{BaseURL: "http://localhost:8000"} // Добавляем конфиг
+	err := logger.InitLogger(cfg.Environment)
+	require.NoError(t, err)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	m := mocks.NewMockRepository(ctrl)
+	m.EXPECT().Ping(context.Background()).Return(nil)
+	require.NoError(t, err)
+	service := services.New(m, cfg)
+	handler := New(service)
+
+	t.Run("Mock test db", func(t *testing.T) {
+		r := httptest.NewRequest(http.MethodGet, "/ping", nil)
+		w := httptest.NewRecorder()
+		handler.PingDB(w, r)
+
+		require.Equal(t, 200, w.Code)
+	})
+
 }

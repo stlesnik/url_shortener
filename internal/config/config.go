@@ -10,20 +10,23 @@ type Config struct {
 	BaseURL         string `env:"BASE_URL"`
 	FileStoragePath string `env:"FILE_STORAGE_PATH"`
 	Environment     string `env:"ENVIRONMENT"`
+	DatabaseDSN     string `env:"DATABASE_DSN"`
 }
 
-func NewConfig() (*Config, error) {
+func New() (*Config, error) {
 	cfg := &Config{}
 
 	defaultAddress := "localhost:8080"
 	defaultBaseURL := "http://localhost:8080"
-	defaultFile := "storage.json"
+	defaultFile := ""
 	defaultEnvironment := "dev"
+	defaultDatabaseDSN := ""
 
 	flag.StringVar(&cfg.ServerAddress, "a", defaultAddress, "Address to run the server")
 	flag.StringVar(&cfg.BaseURL, "b", defaultBaseURL, "Base URL for shortened links")
 	flag.StringVar(&cfg.FileStoragePath, "f", defaultFile, "Path to file for persistent storage")
 	flag.StringVar(&cfg.Environment, "e", defaultEnvironment, "Environment")
+	flag.StringVar(&cfg.DatabaseDSN, "d", defaultDatabaseDSN, "Database url")
 	flag.Parse()
 
 	if err := env.Parse(cfg); err != nil {
