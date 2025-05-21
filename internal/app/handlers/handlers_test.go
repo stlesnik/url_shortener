@@ -336,7 +336,7 @@ func TestHandler_APIGetUserURLs(t *testing.T) {
 						{ShortURL: "http://localhost/abc", OriginalURL: "https://ya.ru"},
 					}, nil)
 			},
-			expectedCode: http.StatusCreated,
+			expectedCode: http.StatusOK,
 			expectedBody: `[{"short_url":"http://localhost/abc","original_url":"https://ya.ru"}]`,
 		},
 	}

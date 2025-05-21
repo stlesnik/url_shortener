@@ -80,18 +80,11 @@ func createSignedCookie(userID string, secretKey string) (*http.Cookie, error) {
 }
 
 func getUserIDFromCookie(r *http.Request, secretKey string) (string, error) {
-	//authCookie, err := r.Cookie("Authorization")
 	auth := r.Header.Get("Authorization")
 	if auth == "" {
-		//if errors.Is(err, http.ErrNoCookie) {
-		//	return "", err
-		//}
 		return "", fmt.Errorf("failed to get Authorization cookie")
 	}
 
-	//if authCookie.Value == "" {
-	//	return "", errors.New("empty Authorization cookie")
-	//}
 	authToken := strings.Split(auth, " ")
 	if len(authToken) != 2 || authToken[0] != "Bearer" {
 		return "", fmt.Errorf("invalid Authorization header")
