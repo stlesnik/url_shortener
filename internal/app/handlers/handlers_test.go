@@ -4,6 +4,8 @@ import (
 	"context"
 	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"
+	"github.com/stlesnik/url_shortener/internal/app/middleware"
+	"github.com/stlesnik/url_shortener/internal/app/models"
 	"github.com/stlesnik/url_shortener/internal/app/repository"
 	"github.com/stlesnik/url_shortener/internal/app/services"
 	"github.com/stlesnik/url_shortener/internal/app/services/mocks"
@@ -139,11 +141,11 @@ func TestHandler_SaveURL_Conflict_WithMockRepo(t *testing.T) {
 	const longURL = "http://example.com"
 	gomock.InOrder(
 		m.EXPECT().
-			Save(context.Background(), gomock.Any(), longURL).
+			SaveURL(context.Background(), gomock.Any(), longURL).
 			Return(false, nil).
 			Times(1),
 		m.EXPECT().
-			Save(context.Background(), gomock.Any(), longURL).
+			SaveURL(context.Background(), gomock.Any(), longURL).
 			Return(true, nil).
 			Times(1),
 	)
@@ -196,7 +198,7 @@ func TestHandler_GetLongURL(t *testing.T) {
 	err := logger.InitLogger(cfg.Environment)
 	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
-	_, _ = repo.Save(context.Background(), "_SGMGLQIsIM=", "http://mbrgaoyhv.yandex")
+	_, _ = repo.SaveURL(context.Background(), "_SGMGLQIsIM=", "http://mbrgaoyhv.yandex")
 	service := services.New(repo, cfg)
 	handler := New(service)
 
@@ -286,6 +288,83 @@ func TestHandler_ApiPrepareShortURL(t *testing.T) {
 			}
 			err := res.Body.Close()
 			require.NoError(t, err)
+		})
+	}
+}
+
+func TestHandler_ApiGetUserURLs(t *testing.T) {
+	cfg := &config.Config{BaseURL: "http://localhost:8000"}
+	_ = logger.InitLogger(cfg.Environment)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	type (
+		FullRepo struct {
+			*mocks.MockRepository
+			*mocks.MockURLList
+		}
+	)
+
+	tests := []struct {
+		name         string
+		setupRepo    func() services.Repository
+		setupContext func(*http.Request) *http.Request
+		expectCall   func(*FullRepo)
+		expectedCode int
+		expectedBody string
+	}{
+		{
+			name: "Репо поддерживает URLList - успех",
+			setupRepo: func() services.Repository {
+				fr := &FullRepo{
+					mocks.NewMockRepository(ctrl),
+					mocks.NewMockURLList(ctrl),
+				}
+				return fr
+			},
+			setupContext: func(r *http.Request) *http.Request {
+				return r.WithContext(context.WithValue(r.Context(), middleware.USER_ID_KEY_NAME, "user123"))
+			},
+			expectCall: func(fr *FullRepo) {
+				fr.MockURLList.EXPECT().
+					GetURLList(gomock.Any(), "user123").
+					Return([]models.BaseURLResponse{
+						{ShortURL: "http://localhost/abc", OriginalURL: "https://ya.ru"},
+					}, nil)
+			},
+			expectedCode: http.StatusCreated,
+			expectedBody: `[{"short_url":"http://localhost/abc","original_url":"https://ya.ru"}]`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := tt.setupRepo()
+			if fr, ok := repo.(*FullRepo); ok && tt.expectCall != nil {
+				tt.expectCall(fr)
+			}
+
+			service := services.New(repo, cfg)
+			handler := New(service)
+
+			req := httptest.NewRequest(http.MethodGet, "/api/user/urls", nil)
+			if tt.setupContext != nil {
+				req = tt.setupContext(req)
+			}
+			w := httptest.NewRecorder()
+
+			handler.ApiGetUserURLs(w, req)
+
+			res := w.Result()
+			defer func() {
+				require.NoError(t, req.Body.Close())
+			}()
+
+			assert.Equal(t, tt.expectedCode, res.StatusCode)
+			if tt.expectedBody != "" {
+				body, _ := io.ReadAll(res.Body)
+				assert.JSONEq(t, tt.expectedBody, string(body))
+			}
 		})
 	}
 }

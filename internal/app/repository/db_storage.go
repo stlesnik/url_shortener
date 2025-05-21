@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jmoiron/sqlx"
+	"github.com/stlesnik/url_shortener/internal/app/models"
 	"github.com/stlesnik/url_shortener/internal/logger"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -36,16 +37,16 @@ func (d *DataBase) Ping(ctx context.Context) error {
 	return nil
 }
 
-func (d *DataBase) Save(ctx context.Context, short string, long string) (isDouble bool, err error) {
-	_, dbErr := d.db.ExecContext(ctx, "INSERT INTO url (short_url, long_url) VALUES ($1, $2)", short, long)
+func (d *DataBase) SaveURL(ctx context.Context, short string, long string) (isDouble bool, err error) {
+	_, dbErr := d.db.ExecContext(ctx, "INSERT INTO url (short_url, original_url) VALUES ($1, $2)", short, long)
 	if dbErr != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(dbErr, &pgErr) && pgErr.Code == ErrCodeUniqueViolation {
 			logger.Sugaarz.Infow("this short url already exists", "short", short, "long", long)
 			return true, nil
 		}
-		logger.Sugaarz.Errorf("error while saving url: %w: %v", ErrSaveURL, dbErr)
-		return false, fmt.Errorf("error while saving url: %w: %v", ErrSaveURL, dbErr)
+		logger.Sugaarz.Errorf("%w: %v", ErrSaveURL, dbErr)
+		return false, fmt.Errorf("%w: %v", ErrSaveURL, dbErr)
 	}
 	return false, nil
 }
@@ -55,7 +56,7 @@ type URLPair struct {
 	LongURL string
 }
 
-func (d *DataBase) SaveBatch(ctx context.Context, batch []URLPair) error {
+func (d *DataBase) SaveBatchURL(ctx context.Context, batch []URLPair) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return fmt.Errorf("error while beginning transaction: %w: %v", ErrBeginTransaction, err)
@@ -63,9 +64,9 @@ func (d *DataBase) SaveBatch(ctx context.Context, batch []URLPair) error {
 
 	for _, pair := range batch {
 		_, err := tx.ExecContext(ctx, ""+
-			"INSERT INTO url (short_url, long_url) "+
+			"INSERT INTO url (short_url, original_url) "+
 			"VALUES ($1, $2) "+
-			"ON CONFLICT (long_url) DO NOTHING", pair.URLHash, pair.LongURL)
+			"ON CONFLICT (original_url) DO NOTHING", pair.URLHash, pair.LongURL)
 		if err != nil {
 			_ = tx.Rollback()
 			return fmt.Errorf("error while creating SQL statement in transaction: %w", err)
@@ -75,9 +76,9 @@ func (d *DataBase) SaveBatch(ctx context.Context, batch []URLPair) error {
 	return tx.Commit()
 }
 
-func (d *DataBase) Get(ctx context.Context, short string) (string, error) {
+func (d *DataBase) GetURL(ctx context.Context, short string) (string, error) {
 	var longURL string
-	err := d.db.GetContext(ctx, &longURL, "SELECT long_url FROM url WHERE short_url = $1", short)
+	err := d.db.GetContext(ctx, &longURL, "SELECT original_url FROM url WHERE short_url = $1", short)
 	if errors.Is(err, sql.ErrNoRows) {
 		return "", ErrURLNotFound
 	}
@@ -86,6 +87,18 @@ func (d *DataBase) Get(ctx context.Context, short string) (string, error) {
 	}
 	logger.Sugaarz.Infow("Got short url from db", "short", short, "long", longURL)
 	return longURL, nil
+}
+
+func (d *DataBase) GetURLList(ctx context.Context, userID string) (data []models.BaseURLResponse, err error) {
+	err = d.db.GetContext(ctx, &data, "SELECT original_url,short_url FROM url WHERE user_id = $1", userID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrURLNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("error while getting short url: %w: %v", ErrGetURL, err)
+	}
+	logger.Sugaarz.Infow("Got urls list from db", "data", data, "userID", userID)
+	return
 }
 
 func (d *DataBase) Close() error {

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	"github.com/stlesnik/url_shortener/internal/app/middleware"
 	"github.com/stlesnik/url_shortener/internal/app/models"
 	"github.com/stlesnik/url_shortener/internal/app/repository"
 	"github.com/stlesnik/url_shortener/internal/app/services"
@@ -175,6 +176,38 @@ func (h *Handler) APIPrepareBatchShortURL(res http.ResponseWriter, req *http.Req
 		logger.Sugaarz.Errorf("got %v errors while processing request: %w", len(validationErrors), errors.Join(validationErrors...))
 	}
 	logger.Sugaarz.Debugw("sent APISaveBatchURL response")
+}
+
+func (h *Handler) ApiGetUserURLs(res http.ResponseWriter, req *http.Request) {
+	logger.Sugaarz.Debugw("got ApiGetUserURLs response")
+	userIDVal := req.Context().Value(middleware.USER_ID_KEY_NAME)
+	if userIDVal == nil {
+		logger.Sugaarz.Warn("no user id in request context")
+		WriteError(res, "no user id in request context", http.StatusUnauthorized, false)
+		return
+	}
+	userID, ok := userIDVal.(string)
+	if !ok {
+		logger.Sugaarz.Errorw("cannot convert userID to string")
+		WriteError(res, "cannot convert userID to string", http.StatusInternalServerError, true)
+		return
+	}
+	var urlsResponseOnj []models.BaseURLResponse
+	urlsResponseOnj, URLErr := h.service.GetUserURLs(req.Context(), userID)
+	if URLErr != nil {
+		logger.Sugaarz.Errorw("error getting users urls", "err", URLErr)
+		WriteError(res, "error getting users urls", http.StatusNoContent, false)
+		return
+	}
+
+	res.Header().Set("Content-Type", "application/json")
+	res.WriteHeader(http.StatusCreated)
+	if err := json.NewEncoder(res).Encode(urlsResponseOnj); err != nil {
+		logger.Sugaarz.Errorw("error encoding body", "err", err)
+		WriteError(res, "Failed to encode body", http.StatusInternalServerError, true)
+		return
+	}
+	logger.Sugaarz.Debugw("sent ApiGetUserURLs response")
 }
 
 func (h *Handler) PingDB(res http.ResponseWriter, req *http.Request) {
