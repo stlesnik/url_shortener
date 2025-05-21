@@ -20,10 +20,10 @@ func (s *Server) setupRoutes() {
 		)
 	}
 	s.router.Post("/", wrap(hs.SaveURL, true))
-	s.router.Get("/ping", wrap(hs.PingDB, false))
-	s.router.Get("/{id}", wrap(hs.GetLongURL, false))
-	s.router.Post("/api/shorten", wrap(hs.APIPrepareShortURL, false))
-	s.router.Post("/api/shorten/batch", wrap(hs.APIPrepareBatchShortURL, false))
-	s.router.Get("/api/user/urls", wrap(hs.APIGetUserURLs, false))
+	s.router.Get("/ping", wrap(hs.PingDB, true))
+	s.router.Get("/{id}", wrap(hs.GetLongURL, true))
+	s.router.Post("/api/shorten", wrap(hs.APIPrepareShortURL, true))
+	s.router.Post("/api/shorten/batch", wrap(hs.APIPrepareBatchShortURL, true))
+	s.router.Get("/api/user/urls", wrap(hs.APIGetUserURLs, true))
 
 }
