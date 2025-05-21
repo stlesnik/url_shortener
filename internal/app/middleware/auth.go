@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/stlesnik/url_shortener/internal/config"
@@ -31,7 +32,7 @@ func WithAuth(cfg *config.Config, createIfNot bool, next http.HandlerFunc) http.
 			next.ServeHTTP(w, r.WithContext(ctx))
 		} else if createIfNot {
 			if errors.Is(err, http.ErrNoCookie) {
-				logger.Sugaarz.Errorw("error while validating token:", "err", err)
+				logger.Sugaarz.Infow("no token in cookie", "err", err)
 			}
 			newUserID := uuid.New().String()
 			logger.Sugaarz.Infow("No user id in cookie. Created new", "userID", newUserID)
@@ -42,6 +43,7 @@ func WithAuth(cfg *config.Config, createIfNot bool, next http.HandlerFunc) http.
 			}
 
 			http.SetCookie(w, cookie)
+			w.Header().Set("Authorization", "Bearer "+cookie.Value)
 			ctx := context.WithValue(r.Context(), UserIDKeyName, newUserID)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		} else {
@@ -78,20 +80,25 @@ func createSignedCookie(userID string, secretKey string) (*http.Cookie, error) {
 }
 
 func getUserIDFromCookie(r *http.Request, secretKey string) (string, error) {
-	authCookie, err := r.Cookie("Authorization")
-	if err != nil {
-		if errors.Is(err, http.ErrNoCookie) {
-			return "", err
-		}
-		return "", fmt.Errorf("failed to get Authorization cookie: %w", err)
+	//authCookie, err := r.Cookie("Authorization")
+	auth := r.Header.Get("Authorization")
+	if auth == "" {
+		//if errors.Is(err, http.ErrNoCookie) {
+		//	return "", err
+		//}
+		return "", fmt.Errorf("failed to get Authorization cookie")
 	}
 
-	if authCookie.Value == "" {
-		return "", errors.New("empty Authorization cookie")
+	//if authCookie.Value == "" {
+	//	return "", errors.New("empty Authorization cookie")
+	//}
+	authToken := strings.Split(auth, " ")
+	if len(authToken) != 2 || authToken[0] != "Bearer" {
+		return "", fmt.Errorf("invalid Authorization header")
 	}
 
 	claims := &Claims{}
-	token, err := jwt.ParseWithClaims(authCookie.Value, claims, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(authToken[1], claims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}

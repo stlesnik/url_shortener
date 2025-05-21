@@ -215,7 +215,7 @@ func (h *Handler) APIGetUserURLs(res http.ResponseWriter, req *http.Request) {
 	}
 
 	res.Header().Set("Content-Type", "application/json")
-	res.WriteHeader(http.StatusCreated)
+	res.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(res).Encode(urlsResponseOnj); err != nil {
 		logger.Sugaarz.Errorw("error encoding body", "err", err)
 		WriteError(res, "Failed to encode body", http.StatusInternalServerError, true)
