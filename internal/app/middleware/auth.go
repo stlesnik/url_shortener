@@ -17,8 +17,8 @@ import (
 type contextKey string
 
 const (
-	TOKEN_EXP                   = time.Hour * 24
-	USER_ID_KEY_NAME contextKey = "userID"
+	TokenExp                 = time.Hour * 24
+	UserIDKeyName contextKey = "userID"
 )
 
 func WithAuth(cfg *config.Config, createIfNot bool, next http.HandlerFunc) http.HandlerFunc {
@@ -27,7 +27,7 @@ func WithAuth(cfg *config.Config, createIfNot bool, next http.HandlerFunc) http.
 
 		if err == nil {
 			logger.Sugaarz.Infow("Got user id from cookie", "userID", userID)
-			ctx := context.WithValue(r.Context(), USER_ID_KEY_NAME, userID)
+			ctx := context.WithValue(r.Context(), UserIDKeyName, userID)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		} else if createIfNot {
 			if errors.Is(err, http.ErrNoCookie) {
@@ -42,7 +42,7 @@ func WithAuth(cfg *config.Config, createIfNot bool, next http.HandlerFunc) http.
 			}
 
 			http.SetCookie(w, cookie)
-			ctx := context.WithValue(r.Context(), USER_ID_KEY_NAME, newUserID)
+			ctx := context.WithValue(r.Context(), UserIDKeyName, newUserID)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		} else {
 			next.ServeHTTP(w, r)
@@ -58,7 +58,7 @@ type Claims struct {
 func createSignedCookie(userID string, secretKey string) (*http.Cookie, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TOKEN_EXP)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TokenExp)),
 		},
 		UserID: userID,
 	})
@@ -71,7 +71,7 @@ func createSignedCookie(userID string, secretKey string) (*http.Cookie, error) {
 	return &http.Cookie{
 		Name:     "auth",
 		Value:    tokenString,
-		Expires:  time.Now().Add(TOKEN_EXP),
+		Expires:  time.Now().Add(TokenExp),
 		HttpOnly: true,
 		Secure:   true,
 	}, nil

@@ -24,6 +24,6 @@ func (s *Server) setupRoutes() {
 	s.router.Get("/{id}", wrap(hs.GetLongURL, false))
 	s.router.Post("/api/shorten", wrap(hs.APIPrepareShortURL, false))
 	s.router.Post("/api/shorten/batch", wrap(hs.APIPrepareBatchShortURL, false))
-	s.router.Get("/api/user/urls", wrap(hs.ApiGetUserURLs, false))
+	s.router.Get("/api/user/urls", wrap(hs.APIGetUserURLs, false))
 
 }

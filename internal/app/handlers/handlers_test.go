@@ -114,7 +114,7 @@ func TestHandler_SaveURL(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tt.longURL))
 			r.Header.Add("Content-Type", "text/plain")
-			ctx := context.WithValue(r.Context(), middleware.USER_ID_KEY_NAME, "test")
+			ctx := context.WithValue(r.Context(), middleware.UserIDKeyName, "test")
 			r = r.WithContext(ctx)
 			w := httptest.NewRecorder()
 			handler.SaveURL(w, r)
@@ -160,7 +160,7 @@ func TestHandler_SaveURL_Conflict_WithMockRepo(t *testing.T) {
 
 	req1 := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(longURL))
 	req1.Header.Add("Content-Type", "text/plain")
-	ctx1 := context.WithValue(req1.Context(), middleware.USER_ID_KEY_NAME, "")
+	ctx1 := context.WithValue(req1.Context(), middleware.UserIDKeyName, "")
 	w1 := httptest.NewRecorder()
 	handler.SaveURL(w1, req1.WithContext(ctx1))
 
@@ -174,7 +174,7 @@ func TestHandler_SaveURL_Conflict_WithMockRepo(t *testing.T) {
 
 	req2 := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(longURL))
 	req2.Header.Add("Content-Type", "text/plain")
-	ctx2 := context.WithValue(req2.Context(), middleware.USER_ID_KEY_NAME, "")
+	ctx2 := context.WithValue(req2.Context(), middleware.UserIDKeyName, "")
 	w2 := httptest.NewRecorder()
 	handler.SaveURL(w2, req2.WithContext(ctx2))
 
@@ -296,7 +296,7 @@ func TestHandler_ApiPrepareShortURL(t *testing.T) {
 	}
 }
 
-func TestHandler_ApiGetUserURLs(t *testing.T) {
+func TestHandler_APIGetUserURLs(t *testing.T) {
 	cfg := &config.Config{BaseURL: "http://localhost:8000"}
 	_ = logger.InitLogger(cfg.Environment)
 	ctrl := gomock.NewController(t)
@@ -327,7 +327,7 @@ func TestHandler_ApiGetUserURLs(t *testing.T) {
 				return fr
 			},
 			setupContext: func(r *http.Request) *http.Request {
-				return r.WithContext(context.WithValue(r.Context(), middleware.USER_ID_KEY_NAME, "user123"))
+				return r.WithContext(context.WithValue(r.Context(), middleware.UserIDKeyName, "user123"))
 			},
 			expectCall: func(fr *FullRepo) {
 				fr.MockURLList.EXPECT().
@@ -357,7 +357,7 @@ func TestHandler_ApiGetUserURLs(t *testing.T) {
 			}
 			w := httptest.NewRecorder()
 
-			handler.ApiGetUserURLs(w, req)
+			handler.APIGetUserURLs(w, req)
 
 			res := w.Result()
 			defer func() {

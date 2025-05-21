@@ -41,7 +41,7 @@ func (h *Handler) getLongURLFromReq(req *http.Request) (string, error) {
 func (h *Handler) SaveURL(res http.ResponseWriter, req *http.Request) {
 	//get user id
 	// TODO: спрятать этот код в сервисы, так как дублирует
-	userIDVal := req.Context().Value(middleware.USER_ID_KEY_NAME)
+	userIDVal := req.Context().Value(middleware.UserIDKeyName)
 	if userIDVal == nil {
 		logger.Sugaarz.Warn("no user id in request context")
 		WriteError(res, "no user id in request context", http.StatusUnauthorized, false)
@@ -192,9 +192,9 @@ func (h *Handler) APIPrepareBatchShortURL(res http.ResponseWriter, req *http.Req
 	logger.Sugaarz.Debugw("sent APISaveBatchURL response")
 }
 
-func (h *Handler) ApiGetUserURLs(res http.ResponseWriter, req *http.Request) {
-	logger.Sugaarz.Debugw("got ApiGetUserURLs response")
-	userIDVal := req.Context().Value(middleware.USER_ID_KEY_NAME)
+func (h *Handler) APIGetUserURLs(res http.ResponseWriter, req *http.Request) {
+	logger.Sugaarz.Debugw("got APIGetUserURLs response")
+	userIDVal := req.Context().Value(middleware.UserIDKeyName)
 	if userIDVal == nil {
 		logger.Sugaarz.Warn("no user id in request context")
 		WriteError(res, "no user id in request context", http.StatusUnauthorized, false)
@@ -221,7 +221,7 @@ func (h *Handler) ApiGetUserURLs(res http.ResponseWriter, req *http.Request) {
 		WriteError(res, "Failed to encode body", http.StatusInternalServerError, true)
 		return
 	}
-	logger.Sugaarz.Debugw("sent ApiGetUserURLs response")
+	logger.Sugaarz.Debugw("sent APIGetUserURLs response")
 }
 
 func (h *Handler) PingDB(res http.ResponseWriter, req *http.Request) {
