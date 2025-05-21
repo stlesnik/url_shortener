@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"github.com/stlesnik/url_shortener/internal/app/models"
 	"github.com/stlesnik/url_shortener/internal/app/repository"
 	"github.com/stlesnik/url_shortener/internal/config"
 	"github.com/stlesnik/url_shortener/internal/logger"
@@ -18,20 +19,24 @@ type MockRepository struct {
 
 func (m *MockRepository) Ping(_ context.Context) error { return nil }
 
-func (m *MockRepository) Save(_ context.Context, shortURL, longURL string) (bool, error) {
+func (m *MockRepository) SaveURL(_ context.Context, shortURL, longURL string, _ string) (bool, error) {
 	if m.fail {
-		return false, ErrSave
+		return false, ErrServiceSave
 	}
 	m.storage[shortURL] = longURL
 	return false, nil
 }
 
-func (m *MockRepository) Get(_ context.Context, shortURL string) (string, error) {
+func (m *MockRepository) GetURL(_ context.Context, shortURL string) (string, error) {
 	val, exists := m.storage[shortURL]
 	if !exists {
 		return "", repository.ErrURLNotFound
 	}
 	return val, nil
+}
+
+func (m *MockRepository) GetURLList(_ context.Context, _ string) ([]models.BaseURLDTO, error) {
+	return nil, nil
 }
 
 func (m *MockRepository) Close() error {
@@ -68,7 +73,7 @@ func TestServices_CreateSavePrepareShortURL(t *testing.T) {
 			}
 			service := New(repo, cfg)
 
-			shortURL, _, errMsg := service.CreateSavePrepareShortURL(context.Background(), tt.longURL)
+			shortURL, _, errMsg := service.CreateSavePrepareShortURL(context.Background(), tt.longURL, "")
 
 			if tt.wantError {
 				assert.NotEmpty(t, errMsg)
@@ -122,7 +127,7 @@ func TestServices_SaveShortURL(t *testing.T) {
 			}
 			service := New(repo, cfg)
 
-			_, err := service.SaveShortURL(context.Background(), hash, longURL)
+			_, err := service.SaveShortURL(context.Background(), hash, longURL, "")
 
 			if tt.wantError {
 				assert.Error(t, err)

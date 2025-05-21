@@ -19,3 +19,13 @@ type APIResponsePrepareBatchShURL struct {
 	CorrelationID string `json:"correlation_id"`
 	ShortURL      string `json:"short_url"`
 }
+
+// APIGetUserURLs
+type BaseURLDTO struct {
+	ShortURLHash string `db:"short_url"`
+	OriginalURL  string `db:"original_url"`
+}
+type BaseURLResponse struct {
+	ShortURL    string `json:"short_url"`
+	OriginalURL string `json:"original_url"`
+}
