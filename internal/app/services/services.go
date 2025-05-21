@@ -26,12 +26,12 @@ func New(repo Repository, cfg *config.Config) *URLShortenerService {
 	return &URLShortenerService{repo, cfg}
 }
 
-func (s *URLShortenerService) CreateSavePrepareShortURL(ctx context.Context, longURL string) (string, bool, string) {
+func (s *URLShortenerService) CreateSavePrepareShortURL(ctx context.Context, longURL string, userID string) (string, bool, string) {
 	urlHash, err := s.CreateShortURLHash(longURL)
 	if err != nil {
 		return "", false, "Failed to create short URL, err: " + err.Error()
 	}
-	isDouble, err := s.SaveShortURL(ctx, urlHash, longURL)
+	isDouble, err := s.SaveShortURL(ctx, urlHash, longURL, userID)
 	if err != nil {
 		return "", false, "Failed to save short url, err: " + err.Error()
 	}
@@ -48,8 +48,8 @@ func (s *URLShortenerService) CreateShortURLHash(longURL string) (string, error)
 	return base64.URLEncoding.EncodeToString(h.Sum(nil)), nil
 }
 
-func (s *URLShortenerService) SaveShortURL(ctx context.Context, urlHash, longURL string) (isDouble bool, err error) {
-	isDouble, err = s.repo.SaveURL(ctx, urlHash, longURL)
+func (s *URLShortenerService) SaveShortURL(ctx context.Context, urlHash, longURL string, userID string) (isDouble bool, err error) {
+	isDouble, err = s.repo.SaveURL(ctx, urlHash, longURL, userID)
 	return
 }
 
@@ -63,7 +63,7 @@ func (s *URLShortenerService) SaveBatchShortURL(ctx context.Context, urlPairList
 	} else {
 		logger.Sugaarz.Debugw("saving batch urls ordinary way")
 		for _, urlPair := range urlPairList {
-			_, err := s.repo.SaveURL(ctx, urlPair.URLHash, urlPair.LongURL)
+			_, err := s.repo.SaveURL(ctx, urlPair.URLHash, urlPair.LongURL, "")
 			if err != nil {
 				return err
 			}

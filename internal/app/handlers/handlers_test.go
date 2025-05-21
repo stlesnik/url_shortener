@@ -114,6 +114,8 @@ func TestHandler_SaveURL(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tt.longURL))
 			r.Header.Add("Content-Type", "text/plain")
+			ctx := context.WithValue(r.Context(), middleware.USER_ID_KEY_NAME, "test")
+			r = r.WithContext(ctx)
 			w := httptest.NewRecorder()
 			handler.SaveURL(w, r)
 
@@ -141,11 +143,11 @@ func TestHandler_SaveURL_Conflict_WithMockRepo(t *testing.T) {
 	const longURL = "http://example.com"
 	gomock.InOrder(
 		m.EXPECT().
-			SaveURL(context.Background(), gomock.Any(), longURL).
+			SaveURL(gomock.Any(), gomock.Any(), longURL, "").
 			Return(false, nil).
 			Times(1),
 		m.EXPECT().
-			SaveURL(context.Background(), gomock.Any(), longURL).
+			SaveURL(gomock.Any(), gomock.Any(), longURL, "").
 			Return(true, nil).
 			Times(1),
 	)
@@ -158,8 +160,9 @@ func TestHandler_SaveURL_Conflict_WithMockRepo(t *testing.T) {
 
 	req1 := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(longURL))
 	req1.Header.Add("Content-Type", "text/plain")
+	ctx1 := context.WithValue(req1.Context(), middleware.USER_ID_KEY_NAME, "")
 	w1 := httptest.NewRecorder()
-	handler.SaveURL(w1, req1)
+	handler.SaveURL(w1, req1.WithContext(ctx1))
 
 	require.Equal(t, http.StatusCreated, w1.Code)
 	assert.Equal(t, "text/plain", w1.Header().Get("Content-Type"))
@@ -171,8 +174,9 @@ func TestHandler_SaveURL_Conflict_WithMockRepo(t *testing.T) {
 
 	req2 := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(longURL))
 	req2.Header.Add("Content-Type", "text/plain")
+	ctx2 := context.WithValue(req2.Context(), middleware.USER_ID_KEY_NAME, "")
 	w2 := httptest.NewRecorder()
-	handler.SaveURL(w2, req2)
+	handler.SaveURL(w2, req2.WithContext(ctx2))
 
 	require.Equal(t, http.StatusConflict, w2.Code)
 	assert.Equal(t, "text/plain", w2.Header().Get("Content-Type"))
@@ -198,7 +202,7 @@ func TestHandler_GetLongURL(t *testing.T) {
 	err := logger.InitLogger(cfg.Environment)
 	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
-	_, _ = repo.SaveURL(context.Background(), "_SGMGLQIsIM=", "http://mbrgaoyhv.yandex")
+	_, _ = repo.SaveURL(context.Background(), "_SGMGLQIsIM=", "http://mbrgaoyhv.yandex", "")
 	service := services.New(repo, cfg)
 	handler := New(service)
 

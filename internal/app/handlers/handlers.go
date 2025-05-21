@@ -39,6 +39,20 @@ func (h *Handler) getLongURLFromReq(req *http.Request) (string, error) {
 }
 
 func (h *Handler) SaveURL(res http.ResponseWriter, req *http.Request) {
+	//get user id
+	// TODO: спрятать этот код в сервисы, так как дублирует
+	userIDVal := req.Context().Value(middleware.USER_ID_KEY_NAME)
+	if userIDVal == nil {
+		logger.Sugaarz.Warn("no user id in request context")
+		WriteError(res, "no user id in request context", http.StatusUnauthorized, false)
+		return
+	}
+	userID, ok := userIDVal.(string)
+	if !ok {
+		logger.Sugaarz.Errorw("cannot convert userID to string")
+		WriteError(res, "cannot convert userID to string", http.StatusInternalServerError, true)
+		return
+	}
 	//get long url from body
 	longURLStr, err := h.getLongURLFromReq(req)
 	if err != nil {
@@ -46,7 +60,7 @@ func (h *Handler) SaveURL(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	//generate and save short url
-	shortURL, isDouble, errText := h.service.CreateSavePrepareShortURL(req.Context(), longURLStr)
+	shortURL, isDouble, errText := h.service.CreateSavePrepareShortURL(req.Context(), longURLStr, userID)
 	if errText != "" {
 		logger.Sugaarz.Errorw(errText)
 		WriteError(res, errText, http.StatusInternalServerError, true)
@@ -97,7 +111,7 @@ func (h *Handler) APIPrepareShortURL(res http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	shortURL, isDouble, errText := h.service.CreateSavePrepareShortURL(req.Context(), apiReq.LongURL)
+	shortURL, isDouble, errText := h.service.CreateSavePrepareShortURL(req.Context(), apiReq.LongURL, "")
 	if errText != "" {
 		logger.Sugaarz.Errorw(errText)
 		WriteError(res, errText, http.StatusInternalServerError, true)

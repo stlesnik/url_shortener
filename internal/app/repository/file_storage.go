@@ -46,7 +46,7 @@ func (f *FileStorage) Ping(_ context.Context) error {
 	return fmt.Errorf("file repository is empty")
 }
 
-func (f *FileStorage) SaveURL(ctx context.Context, short string, long string) (isDouble bool, err error) {
+func (f *FileStorage) SaveURL(ctx context.Context, short string, long string, _ string) (isDouble bool, err error) {
 	select {
 	case <-ctx.Done():
 		logger.Sugaarz.Info("Client closed connection while in url SaveURL func")

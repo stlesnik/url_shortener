@@ -8,7 +8,7 @@ import (
 
 type Repository interface {
 	Ping(ctx context.Context) error
-	SaveURL(ctx context.Context, shortURL string, longURLStr string) (bool, error)
+	SaveURL(ctx context.Context, shortURL string, longURLStr string, userID string) (bool, error)
 	GetURL(ctx context.Context, shortURL string) (string, error)
 	Close() error
 }

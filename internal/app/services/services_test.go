@@ -19,7 +19,7 @@ type MockRepository struct {
 
 func (m *MockRepository) Ping(_ context.Context) error { return nil }
 
-func (m *MockRepository) SaveURL(_ context.Context, shortURL, longURL string) (bool, error) {
+func (m *MockRepository) SaveURL(_ context.Context, shortURL, longURL string, _ string) (bool, error) {
 	if m.fail {
 		return false, ErrServiceSave
 	}
@@ -73,7 +73,7 @@ func TestServices_CreateSavePrepareShortURL(t *testing.T) {
 			}
 			service := New(repo, cfg)
 
-			shortURL, _, errMsg := service.CreateSavePrepareShortURL(context.Background(), tt.longURL)
+			shortURL, _, errMsg := service.CreateSavePrepareShortURL(context.Background(), tt.longURL, "")
 
 			if tt.wantError {
 				assert.NotEmpty(t, errMsg)
@@ -127,7 +127,7 @@ func TestServices_SaveShortURL(t *testing.T) {
 			}
 			service := New(repo, cfg)
 
-			_, err := service.SaveShortURL(context.Background(), hash, longURL)
+			_, err := service.SaveShortURL(context.Background(), hash, longURL, "")
 
 			if tt.wantError {
 				assert.Error(t, err)

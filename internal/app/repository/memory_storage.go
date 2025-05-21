@@ -22,7 +22,7 @@ func (s *InMemoryRepository) Ping(_ context.Context) error {
 	return fmt.Errorf("in memory repository is empty")
 }
 
-func (s *InMemoryRepository) SaveURL(_ context.Context, short string, long string) (isDouble bool, err error) {
+func (s *InMemoryRepository) SaveURL(_ context.Context, short string, long string, _ string) (isDouble bool, err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.data[short] = long
