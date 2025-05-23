@@ -31,9 +31,7 @@ func WithAuth(cfg *config.Config, next http.HandlerFunc) http.HandlerFunc {
 			ctx := context.WithValue(r.Context(), UserIDKeyName, userID)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		} else {
-			if errors.Is(err, http.ErrNoCookie) {
-				logger.Sugaarz.Infow("no token in cookie", "err", err)
-			}
+			logger.Sugaarz.Infow("error getting auth token", "err", err)
 			newUserID := uuid.New().String()
 			logger.Sugaarz.Infow("No user id in cookie. Created new", "userID", newUserID)
 			cookie, err := createSignedCookie(newUserID, cfg.AuthSecretKey)
