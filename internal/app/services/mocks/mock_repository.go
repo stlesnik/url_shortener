@@ -9,6 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+	models "github.com/stlesnik/url_shortener/internal/app/models"
 )
 
 // MockRepository is a mock of Repository interface.
@@ -49,10 +50,10 @@ func (mr *MockRepositoryMockRecorder) Close() *gomock.Call {
 }
 
 // GetURL mocks base method.
-func (m *MockRepository) GetURL(arg0 context.Context, arg1 string) (string, error) {
+func (m *MockRepository) GetURL(arg0 context.Context, arg1 string) (models.GetURLDTO, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetURL", arg0, arg1)
-	ret0, _ := ret[0].(string)
+	ret0, _ := ret[0].(models.GetURLDTO)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

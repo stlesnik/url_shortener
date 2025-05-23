@@ -27,6 +27,10 @@ func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 
 func WithLogging(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		logger.Sugaarz.Infow("Got request",
+			"uri", r.RequestURI,
+			"method", r.Method,
+		)
 		start := time.Now()
 
 		lw := loggingResponseWriter{
@@ -35,14 +39,11 @@ func WithLogging(next http.HandlerFunc) http.HandlerFunc {
 		next(&lw, r)
 
 		duration := time.Since(start)
-		logger.Sugaarz.Infow("Got request",
-			"uri", r.RequestURI,
-			"method", r.Method,
-			"duration", duration,
-		)
+
 		logger.Sugaarz.Infow("Sent response",
 			"status", lw.status,
 			"size", lw.size,
+			"duration", duration,
 		)
 	}
 }

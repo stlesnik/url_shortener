@@ -11,6 +11,12 @@ import (
 	"github.com/stlesnik/url_shortener/internal/logger"
 	"hash/fnv"
 	"net/url"
+	"time"
+)
+
+const (
+	bufferSize           = 5
+	deleteTickerInterval = 1 * time.Second
 )
 
 var (
@@ -18,12 +24,22 @@ var (
 )
 
 type URLShortenerService struct {
-	repo Repository
-	cfg  *config.Config
+	repo          Repository
+	cfg           *config.Config
+	deleteCh      chan models.DeleteTask
+	daemonsDoneCh chan struct{}
 }
 
-func New(repo Repository, cfg *config.Config) *URLShortenerService {
-	return &URLShortenerService{repo, cfg}
+func New(repo Repository, cfg *config.Config, daemonsDoneCh chan struct{}) *URLShortenerService {
+	s := &URLShortenerService{repo, cfg, make(chan models.DeleteTask, bufferSize), daemonsDoneCh}
+	return s.init()
+}
+func (s *URLShortenerService) init() *URLShortenerService {
+	if _, ok := s.repo.(DBRepository); ok {
+		logger.Sugaarz.Debugw("starting DeleteUrls goroutine")
+		go s.DeleteUrls()
+	}
+	return s
 }
 
 func (s *URLShortenerService) CreateSavePrepareShortURL(ctx context.Context, longURL string, userID string) (string, bool, string) {
@@ -54,9 +70,9 @@ func (s *URLShortenerService) SaveShortURL(ctx context.Context, urlHash, longURL
 }
 
 func (s *URLShortenerService) SaveBatchShortURL(ctx context.Context, urlPairList []repository.URLPair) error {
-	if bSaver, ok := s.repo.(BatchSaver); ok {
+	if rep, ok := s.repo.(DBRepository); ok {
 		logger.Sugaarz.Debugw("saving batch urls with BatchSaver")
-		err := bSaver.SaveBatchURL(ctx, urlPairList)
+		err := rep.SaveBatchURL(ctx, urlPairList)
 		if err != nil {
 			return err
 		}
@@ -84,15 +100,15 @@ func (s *URLShortenerService) PrepareShortURL(urlHash string) string {
 	return fmt.Sprintf("%s/%s", s.cfg.BaseURL, urlHash)
 }
 
-func (s *URLShortenerService) GetLongURLFromDB(ctx context.Context, URLHash string) (string, error) {
-	longURL, err := s.repo.GetURL(ctx, URLHash)
-	return longURL, err
+func (s *URLShortenerService) GetLongURLFromDB(ctx context.Context, URLHash string) (models.GetURLDTO, error) {
+	urlDTO, err := s.repo.GetURL(ctx, URLHash)
+	return urlDTO, err
 }
 
 func (s *URLShortenerService) GetUserURLs(ctx context.Context, userID string) ([]models.BaseURLResponse, error) {
-	if urlListGetter, ok := s.repo.(URLList); ok {
+	if rep, ok := s.repo.(DBRepository); ok {
 		logger.Sugaarz.Debugw("getting urls for userID")
-		urlList, err := urlListGetter.GetURLList(ctx, userID)
+		urlList, err := rep.GetURLList(ctx, userID)
 		if err != nil {
 			return nil, err
 		}
@@ -107,6 +123,65 @@ func (s *URLShortenerService) GetUserURLs(ctx context.Context, userID string) ([
 		return resp, nil
 	} else {
 		return nil, errors.New("not implemented error")
+	}
+}
+
+func (s *URLShortenerService) GenerateDeleteTasks(userID string, urlHashes []string) {
+	if _, ok := s.repo.(DBRepository); ok {
+		for _, urlHash := range urlHashes {
+			select {
+			default:
+				s.deleteCh <- models.DeleteTask{UserID: userID, URLHash: urlHash}
+			}
+		}
+		logger.Sugaarz.Debug("Created ", len(urlHashes), " delete tasks")
+	} else {
+		logger.Sugaarz.Error("not implemented error")
+	}
+
+}
+
+func (s *URLShortenerService) DeleteUrls() {
+	ticker := time.NewTicker(deleteTickerInterval)
+
+	var (
+		values       []interface{}
+		placeholders []string
+	)
+	plInd := 1
+	do := func() {
+		logger.Sugaarz.Debugw("deleting urls for userID")
+		rowsAffected, err := s.repo.(DBRepository).DeleteURLList(values, placeholders)
+		if err != nil {
+			logger.Sugaarz.Error(err)
+		} else {
+			logger.Sugaarz.Debug(rowsAffected, "rows were updated on delete")
+		}
+		values = nil
+		placeholders = nil
+		plInd = 1
+	}
+
+loop:
+	for {
+		select {
+		case <-s.daemonsDoneCh:
+			if len(values) == 0 {
+				continue
+			}
+			do()
+			break loop
+		case task := <-s.deleteCh:
+			values = append(values, task.UserID, task.URLHash)
+			placeholders = append(placeholders, fmt.Sprintf("($%d, $%d)", plInd, plInd+1))
+			plInd = plInd + 2
+
+		case <-ticker.C:
+			if len(values) == 0 {
+				continue
+			}
+			do()
+		}
 	}
 }
 

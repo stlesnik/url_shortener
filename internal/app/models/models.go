@@ -1,5 +1,10 @@
 package models
 
+type GetURLDTO struct {
+	OriginalURL string `db:"original_url"`
+	IsDeleted   bool   `db:"is_deleted"`
+}
+
 // APIPrepareShortURL
 type APIRequestPrepareShURL struct {
 	LongURL string `json:"url"`
@@ -28,4 +33,10 @@ type BaseURLDTO struct {
 type BaseURLResponse struct {
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
+}
+
+// APIDeleteUserURLs
+type DeleteTask struct {
+	URLHash string
+	UserID  string
 }

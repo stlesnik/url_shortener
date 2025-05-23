@@ -1,2 +1,2 @@
 ALTER TABLE url
-    ADD user_id VARCHAR
+    ADD user_id VARCHAR;

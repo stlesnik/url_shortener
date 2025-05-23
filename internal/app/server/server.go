@@ -8,16 +8,18 @@ import (
 )
 
 type Server struct {
-	router chi.Router
-	repo   services.Repository
-	cfg    *config.Config
+	router        chi.Router
+	repo          services.Repository
+	cfg           *config.Config
+	daemonsDoneCh chan struct{}
 }
 
-func New(repo services.Repository, cfg *config.Config) *Server {
+func New(repo services.Repository, cfg *config.Config, daemonsDoneCh chan struct{}) *Server {
 	s := &Server{
-		router: chi.NewRouter(),
-		repo:   repo,
-		cfg:    cfg,
+		router:        chi.NewRouter(),
+		repo:          repo,
+		cfg:           cfg,
+		daemonsDoneCh: daemonsDoneCh,
 	}
 	s.setupRoutes()
 	return s

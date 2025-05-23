@@ -85,10 +85,16 @@ func (h *Handler) SaveURL(res http.ResponseWriter, req *http.Request) {
 
 func (h *Handler) GetLongURL(res http.ResponseWriter, req *http.Request) {
 	URLHash := chi.URLParam(req, "id")
-	longURLStr, err := h.service.GetLongURLFromDB(req.Context(), URLHash)
+	urlDTO, err := h.service.GetLongURLFromDB(req.Context(), URLHash)
+
 	if err == nil {
-		res.Header().Set("Location", longURLStr)
-		res.WriteHeader(http.StatusTemporaryRedirect)
+		if !urlDTO.IsDeleted {
+			res.Header().Set("Location", urlDTO.OriginalURL)
+			res.WriteHeader(http.StatusTemporaryRedirect)
+		} else {
+			res.WriteHeader(http.StatusGone)
+		}
+
 	} else {
 		WriteError(res, "Short url not found", http.StatusBadRequest, false)
 		return
@@ -225,6 +231,33 @@ func (h *Handler) APIGetUserURLs(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusNoContent)
 	}
 	logger.Sugaarz.Debugw("sent APIGetUserURLs response")
+}
+
+func (h *Handler) APIDeleteUserURLs(res http.ResponseWriter, req *http.Request) {
+	logger.Sugaarz.Debugw("got APIDeleteUserURLs response")
+	userIDVal := req.Context().Value(middleware.UserIDKeyName)
+	if userIDVal == nil {
+		logger.Sugaarz.Warn("no user id in request context")
+		WriteError(res, "no user id in request context", http.StatusUnauthorized, false)
+		return
+	}
+	userID, ok := userIDVal.(string)
+	if !ok {
+		logger.Sugaarz.Errorw("cannot convert userID to string")
+		WriteError(res, "cannot convert userID to string", http.StatusInternalServerError, true)
+		return
+	}
+
+	var urlHashes []string
+	err := json.NewDecoder(req.Body).Decode(&urlHashes)
+	if err != nil {
+		logger.Sugaarz.Errorw("error decoding body", "err", err)
+		WriteError(res, "Failed to decode body", http.StatusInternalServerError, true)
+		return
+	}
+	go h.service.GenerateDeleteTasks(userID, urlHashes)
+	res.WriteHeader(http.StatusAccepted)
+	logger.Sugaarz.Debugw("sent APIDeleteUserURLs response")
 }
 
 func (h *Handler) PingDB(res http.ResponseWriter, req *http.Request) {

@@ -9,6 +9,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/stlesnik/url_shortener/internal/app/models"
 	"github.com/stlesnik/url_shortener/internal/logger"
+	"strings"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
@@ -76,17 +77,17 @@ func (d *DataBase) SaveBatchURL(ctx context.Context, batch []URLPair) error {
 	return tx.Commit()
 }
 
-func (d *DataBase) GetURL(ctx context.Context, short string) (string, error) {
-	var longURL string
-	err := d.db.GetContext(ctx, &longURL, "SELECT original_url FROM url WHERE short_url = $1", short)
+func (d *DataBase) GetURL(ctx context.Context, short string) (models.GetURLDTO, error) {
+	var urlDTO models.GetURLDTO
+	err := d.db.GetContext(ctx, &urlDTO, "SELECT original_url, is_deleted FROM url WHERE short_url = $1", short)
 	if errors.Is(err, sql.ErrNoRows) {
-		return "", ErrURLNotFound
+		return models.GetURLDTO{}, ErrURLNotFound
 	}
 	if err != nil {
-		return "", fmt.Errorf("error while getting short url: %w: %v", ErrGetURL, err)
+		return models.GetURLDTO{}, fmt.Errorf("error while getting short url: %w: %v", ErrGetURL, err)
 	}
-	logger.Sugaarz.Infow("Got short url from db", "short", short, "long", longURL)
-	return longURL, nil
+	logger.Sugaarz.Infow("Got short url from db", "short", short, "urlDTO", urlDTO)
+	return urlDTO, nil
 }
 
 func (d *DataBase) GetURLList(ctx context.Context, userID string) (data []models.BaseURLDTO, err error) {
@@ -99,6 +100,24 @@ func (d *DataBase) GetURLList(ctx context.Context, userID string) (data []models
 	}
 	logger.Sugaarz.Infow("Got urls list from db", "data", data, "userID", userID)
 	return
+}
+
+func (d *DataBase) DeleteURLList(values []interface{}, placeholders []string) (int64, error) {
+	query := fmt.Sprintf(`
+		UPDATE url 
+		SET is_deleted = TRUE 
+		WHERE (user_id,short_url) in (%s)
+	`, strings.Join(placeholders, ", "))
+
+	result, err := d.db.Exec(query, values...)
+	if err != nil {
+		return 0, err
+	}
+	ra, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+	return ra, nil
 }
 
 func (d *DataBase) Close() error {
