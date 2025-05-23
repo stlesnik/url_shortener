@@ -28,10 +28,17 @@ type URLShortenerService struct {
 	cfg           *config.Config
 	deleteCh      chan models.DeleteTask
 	daemonsDoneCh chan struct{}
+	saveSemaphore chan struct{}
 }
 
 func New(repo Repository, cfg *config.Config, daemonsDoneCh chan struct{}) *URLShortenerService {
-	s := &URLShortenerService{repo, cfg, make(chan models.DeleteTask, bufferSize), daemonsDoneCh}
+	s := &URLShortenerService{
+		repo,
+		cfg,
+		make(chan models.DeleteTask, bufferSize),
+		daemonsDoneCh,
+		make(chan struct{}, 5),
+	}
 	return s.init()
 }
 func (s *URLShortenerService) init() *URLShortenerService {
@@ -43,16 +50,48 @@ func (s *URLShortenerService) init() *URLShortenerService {
 }
 
 func (s *URLShortenerService) CreateSavePrepareShortURL(ctx context.Context, longURL string, userID string) (string, bool, string) {
-	urlHash, err := s.CreateShortURLHash(longURL)
-	if err != nil {
-		return "", false, "Failed to create short URL, err: " + err.Error()
-	}
-	isDouble, err := s.SaveShortURL(ctx, urlHash, longURL, userID)
-	if err != nil {
-		return "", false, "Failed to save short url, err: " + err.Error()
-	}
-	shortURL := s.PrepareShortURL(urlHash)
-	return shortURL, isDouble, ""
+	resultChan := make(chan struct {
+		shortURL string
+		isDouble bool
+		errMsg   string
+	})
+	go func() {
+		// Захватываем слот в семафоре
+		s.saveSemaphore <- struct{}{}
+		defer func() { <-s.saveSemaphore }()
+
+		urlHash, err := s.CreateShortURLHash(longURL)
+		if err != nil {
+			resultChan <- struct {
+				shortURL string
+				isDouble bool
+				errMsg   string
+			}{"", false, "Failed to create short URL, err: " + err.Error()}
+			return
+		}
+
+		isDouble, err := s.SaveShortURL(ctx, urlHash, longURL, userID)
+		if err != nil {
+			resultChan <- struct {
+				shortURL string
+				isDouble bool
+				errMsg   string
+			}{"", false, "Failed to save short url, err: " + err.Error()}
+			return
+		}
+
+		shortURL := s.PrepareShortURL(urlHash)
+		resultChan <- struct {
+			shortURL string
+			isDouble bool
+			errMsg   string
+		}{shortURL, isDouble, ""}
+		close(resultChan)
+	}()
+
+	// Ожидаем результат из горутины
+	result := <-resultChan
+	return result.shortURL, result.isDouble, result.errMsg
 }
 
 func (s *URLShortenerService) CreateShortURLHash(longURL string) (string, error) {

@@ -78,7 +78,6 @@ func createSignedCookie(userID string, secretKey string) (*http.Cookie, error) {
 func getUserIDFromCookie(r *http.Request, secretKey string) (string, error) {
 	auth := r.Header.Get("Authorization")
 	if auth == "" {
-		logger.Sugaarz.Info("\nheaders: ", r.Header)
 		return "", fmt.Errorf("failed to get Authorization cookie")
 	}
 
