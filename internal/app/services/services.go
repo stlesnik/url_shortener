@@ -129,10 +129,7 @@ func (s *URLShortenerService) GetUserURLs(ctx context.Context, userID string) ([
 func (s *URLShortenerService) GenerateDeleteTasks(userID string, urlHashes []string) {
 	if _, ok := s.repo.(DBRepository); ok {
 		for _, urlHash := range urlHashes {
-			select {
-			default:
-				s.deleteCh <- models.DeleteTask{UserID: userID, URLHash: urlHash}
-			}
+			s.deleteCh <- models.DeleteTask{UserID: userID, URLHash: urlHash}
 		}
 		logger.Sugaarz.Debug("Created ", len(urlHashes), " delete tasks")
 	} else {
