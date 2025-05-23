@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	"github.com/stlesnik/url_shortener/internal/app/middleware"
 	"github.com/stlesnik/url_shortener/internal/app/models"
 	"github.com/stlesnik/url_shortener/internal/app/repository"
 	"github.com/stlesnik/url_shortener/internal/app/services"
@@ -14,11 +15,15 @@ import (
 )
 
 type Handler struct {
-	service *services.URLShortenerService // Вместо прямого доступа к repo и cfg
+	service         *services.URLShortenerService // Вместо прямого доступа к repo и cfg
+	deleteSemaphore chan struct{}
 }
 
 func New(service *services.URLShortenerService) *Handler {
-	return &Handler{service: service}
+	return &Handler{
+		service:         service,
+		deleteSemaphore: make(chan struct{}, 5),
+	}
 }
 
 func (h *Handler) getLongURLFromReq(req *http.Request) (string, error) {
@@ -38,6 +43,20 @@ func (h *Handler) getLongURLFromReq(req *http.Request) (string, error) {
 }
 
 func (h *Handler) SaveURL(res http.ResponseWriter, req *http.Request) {
+	//get user id
+	// TODO: спрятать этот код в сервисы, так как дублирует
+	userIDVal := req.Context().Value(middleware.UserIDKeyName)
+	if userIDVal == nil {
+		logger.Sugaarz.Warn("no user id in request context")
+		WriteError(res, "no user id in request context", http.StatusUnauthorized, false)
+		return
+	}
+	userID, ok := userIDVal.(string)
+	if !ok {
+		logger.Sugaarz.Errorw("cannot convert userID to string")
+		WriteError(res, "cannot convert userID to string", http.StatusInternalServerError, true)
+		return
+	}
 	//get long url from body
 	longURLStr, err := h.getLongURLFromReq(req)
 	if err != nil {
@@ -45,7 +64,7 @@ func (h *Handler) SaveURL(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	//generate and save short url
-	shortURL, isDouble, errText := h.service.CreateSavePrepareShortURL(req.Context(), longURLStr)
+	shortURL, isDouble, errText := h.service.CreateSavePrepareShortURL(req.Context(), longURLStr, userID)
 	if errText != "" {
 		logger.Sugaarz.Errorw(errText)
 		WriteError(res, errText, http.StatusInternalServerError, true)
@@ -70,10 +89,16 @@ func (h *Handler) SaveURL(res http.ResponseWriter, req *http.Request) {
 
 func (h *Handler) GetLongURL(res http.ResponseWriter, req *http.Request) {
 	URLHash := chi.URLParam(req, "id")
-	longURLStr, err := h.service.GetLongURLFromDB(req.Context(), URLHash)
+	urlDTO, err := h.service.GetLongURLFromDB(req.Context(), URLHash)
+
 	if err == nil {
-		res.Header().Set("Location", longURLStr)
-		res.WriteHeader(http.StatusTemporaryRedirect)
+		if !urlDTO.IsDeleted {
+			res.Header().Set("Location", urlDTO.OriginalURL)
+			res.WriteHeader(http.StatusTemporaryRedirect)
+		} else {
+			res.WriteHeader(http.StatusGone)
+		}
+
 	} else {
 		WriteError(res, "Short url not found", http.StatusBadRequest, false)
 		return
@@ -96,7 +121,7 @@ func (h *Handler) APIPrepareShortURL(res http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	shortURL, isDouble, errText := h.service.CreateSavePrepareShortURL(req.Context(), apiReq.LongURL)
+	shortURL, isDouble, errText := h.service.CreateSavePrepareShortURL(req.Context(), apiReq.LongURL, "")
 	if errText != "" {
 		logger.Sugaarz.Errorw(errText)
 		WriteError(res, errText, http.StatusInternalServerError, true)
@@ -175,6 +200,75 @@ func (h *Handler) APIPrepareBatchShortURL(res http.ResponseWriter, req *http.Req
 		logger.Sugaarz.Errorf("got %v errors while processing request: %w", len(validationErrors), errors.Join(validationErrors...))
 	}
 	logger.Sugaarz.Debugw("sent APISaveBatchURL response")
+}
+
+func (h *Handler) APIGetUserURLs(res http.ResponseWriter, req *http.Request) {
+	logger.Sugaarz.Debugw("got APIGetUserURLs response")
+	userIDVal := req.Context().Value(middleware.UserIDKeyName)
+	if userIDVal == nil {
+		logger.Sugaarz.Warn("no user id in request context")
+		WriteError(res, "no user id in request context", http.StatusUnauthorized, false)
+		return
+	}
+	userID, ok := userIDVal.(string)
+	if !ok {
+		logger.Sugaarz.Errorw("cannot convert userID to string")
+		WriteError(res, "cannot convert userID to string", http.StatusInternalServerError, true)
+		return
+	}
+	var urlsResponseObj []models.BaseURLResponse
+	urlsResponseObj, URLErr := h.service.GetUserURLs(req.Context(), userID)
+	if URLErr != nil {
+		logger.Sugaarz.Errorw("error getting users urls", "err", URLErr)
+		WriteError(res, "error getting users urls", http.StatusNoContent, false)
+		return
+	}
+	if len(urlsResponseObj) > 0 {
+		res.Header().Set("Content-Type", "application/json")
+		res.WriteHeader(http.StatusOK)
+		if err := json.NewEncoder(res).Encode(urlsResponseObj); err != nil {
+			logger.Sugaarz.Errorw("error encoding body", "err", err)
+			WriteError(res, "Failed to encode body", http.StatusInternalServerError, true)
+			return
+		}
+	} else {
+		res.WriteHeader(http.StatusNoContent)
+	}
+	logger.Sugaarz.Debugw("sent APIGetUserURLs response")
+}
+
+func (h *Handler) APIDeleteUserURLs(res http.ResponseWriter, req *http.Request) {
+	logger.Sugaarz.Debugw("got APIDeleteUserURLs response")
+	userIDVal := req.Context().Value(middleware.UserIDKeyName)
+	if userIDVal == nil {
+		logger.Sugaarz.Warn("no user id in request context")
+		WriteError(res, "no user id in request context", http.StatusUnauthorized, false)
+		return
+	}
+	userID, ok := userIDVal.(string)
+	if !ok {
+		logger.Sugaarz.Errorw("cannot convert userID to string")
+		WriteError(res, "cannot convert userID to string", http.StatusInternalServerError, true)
+		return
+	}
+
+	var urlHashes []string
+	err := json.NewDecoder(req.Body).Decode(&urlHashes)
+	if err != nil {
+		logger.Sugaarz.Errorw("error decoding body", "err", err)
+		WriteError(res, "Failed to decode body", http.StatusInternalServerError, true)
+		return
+	}
+	go func() {
+		h.deleteSemaphore <- struct{}{}
+		defer func() {
+			<-h.deleteSemaphore
+		}()
+		h.service.GenerateDeleteTasks(userID, urlHashes)
+	}()
+
+	res.WriteHeader(http.StatusAccepted)
+	logger.Sugaarz.Debugw("sent APIDeleteUserURLs response")
 }
 
 func (h *Handler) PingDB(res http.ResponseWriter, req *http.Request) {

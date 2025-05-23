@@ -4,6 +4,8 @@ import (
 	"context"
 	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"
+	"github.com/stlesnik/url_shortener/internal/app/middleware"
+	"github.com/stlesnik/url_shortener/internal/app/models"
 	"github.com/stlesnik/url_shortener/internal/app/repository"
 	"github.com/stlesnik/url_shortener/internal/app/services"
 	"github.com/stlesnik/url_shortener/internal/app/services/mocks"
@@ -24,7 +26,7 @@ func TestHandler_getLongURLFromReq(t *testing.T) {
 	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
 
-	service := services.New(repo, cfg)
+	service := services.New(repo, cfg, nil)
 	handler := New(service)
 
 	type expected struct {
@@ -75,7 +77,7 @@ func TestHandler_SaveURL(t *testing.T) {
 	err := logger.InitLogger(cfg.Environment)
 	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
-	service := services.New(repo, cfg)
+	service := services.New(repo, cfg, nil)
 	handler := New(service)
 
 	type expected struct {
@@ -112,6 +114,8 @@ func TestHandler_SaveURL(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tt.longURL))
 			r.Header.Add("Content-Type", "text/plain")
+			ctx := context.WithValue(r.Context(), middleware.UserIDKeyName, "test")
+			r = r.WithContext(ctx)
 			w := httptest.NewRecorder()
 			handler.SaveURL(w, r)
 
@@ -139,11 +143,11 @@ func TestHandler_SaveURL_Conflict_WithMockRepo(t *testing.T) {
 	const longURL = "http://example.com"
 	gomock.InOrder(
 		m.EXPECT().
-			Save(context.Background(), gomock.Any(), longURL).
+			SaveURL(gomock.Any(), gomock.Any(), longURL, "").
 			Return(false, nil).
 			Times(1),
 		m.EXPECT().
-			Save(context.Background(), gomock.Any(), longURL).
+			SaveURL(gomock.Any(), gomock.Any(), longURL, "").
 			Return(true, nil).
 			Times(1),
 	)
@@ -151,13 +155,14 @@ func TestHandler_SaveURL_Conflict_WithMockRepo(t *testing.T) {
 	cfg := &config.Config{BaseURL: "http://localhost:8000"}
 	err := logger.InitLogger(cfg.Environment)
 	require.NoError(t, err)
-	service := services.New(m, cfg)
+	service := services.New(m, cfg, nil)
 	handler := New(service)
 
 	req1 := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(longURL))
 	req1.Header.Add("Content-Type", "text/plain")
+	ctx1 := context.WithValue(req1.Context(), middleware.UserIDKeyName, "")
 	w1 := httptest.NewRecorder()
-	handler.SaveURL(w1, req1)
+	handler.SaveURL(w1, req1.WithContext(ctx1))
 
 	require.Equal(t, http.StatusCreated, w1.Code)
 	assert.Equal(t, "text/plain", w1.Header().Get("Content-Type"))
@@ -169,8 +174,9 @@ func TestHandler_SaveURL_Conflict_WithMockRepo(t *testing.T) {
 
 	req2 := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(longURL))
 	req2.Header.Add("Content-Type", "text/plain")
+	ctx2 := context.WithValue(req2.Context(), middleware.UserIDKeyName, "")
 	w2 := httptest.NewRecorder()
-	handler.SaveURL(w2, req2)
+	handler.SaveURL(w2, req2.WithContext(ctx2))
 
 	require.Equal(t, http.StatusConflict, w2.Code)
 	assert.Equal(t, "text/plain", w2.Header().Get("Content-Type"))
@@ -196,8 +202,8 @@ func TestHandler_GetLongURL(t *testing.T) {
 	err := logger.InitLogger(cfg.Environment)
 	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
-	_, _ = repo.Save(context.Background(), "_SGMGLQIsIM=", "http://mbrgaoyhv.yandex")
-	service := services.New(repo, cfg)
+	_, _ = repo.SaveURL(context.Background(), "_SGMGLQIsIM=", "http://mbrgaoyhv.yandex", "")
+	service := services.New(repo, cfg, nil)
 	handler := New(service)
 
 	type expected struct {
@@ -252,7 +258,7 @@ func TestHandler_ApiPrepareShortURL(t *testing.T) {
 	err := logger.InitLogger(cfg.Environment)
 	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
-	service := services.New(repo, cfg)
+	service := services.New(repo, cfg, nil)
 	handler := New(service)
 
 	tests := []struct {
@@ -290,6 +296,106 @@ func TestHandler_ApiPrepareShortURL(t *testing.T) {
 	}
 }
 
+func TestHandler_APIGetUserURLs(t *testing.T) {
+	cfg := &config.Config{BaseURL: "http://localhost:8000"}
+	_ = logger.InitLogger(cfg.Environment)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	type (
+		FullRepo struct {
+			*mocks.MockDBRepository
+		}
+	)
+
+	tests := []struct {
+		name         string
+		setupRepo    func() services.Repository
+		setupContext func(*http.Request) *http.Request
+		expectCall   func(*FullRepo)
+		expectedCode int
+		expectedBody string
+	}{
+		{
+			name: "Репо поддерживает URLList - успех",
+			setupRepo: func() services.Repository {
+				fr := &FullRepo{
+					mocks.NewMockDBRepository(ctrl),
+				}
+				return fr
+			},
+			setupContext: func(r *http.Request) *http.Request {
+				return r.WithContext(context.WithValue(r.Context(), middleware.UserIDKeyName, "user123"))
+			},
+			expectCall: func(fr *FullRepo) {
+				fr.MockDBRepository.EXPECT().
+					GetURLList(gomock.Any(), "user123").
+					Return([]models.BaseURLDTO{
+						{ShortURLHash: "abc", OriginalURL: "https://ya.ru"},
+					}, nil)
+			},
+			expectedCode: http.StatusOK,
+			expectedBody: `[{"short_url": "http://localhost:8000/abc","original_url":"https://ya.ru"}]`,
+		},
+		{
+			name: "Нет записей - StatusNoContent",
+			setupRepo: func() services.Repository {
+				fr := &FullRepo{
+					mocks.NewMockDBRepository(ctrl),
+				}
+				return fr
+			},
+			setupContext: func(r *http.Request) *http.Request {
+				return r.WithContext(context.WithValue(r.Context(), middleware.UserIDKeyName, "user123"))
+			},
+			expectCall: func(fr *FullRepo) {
+				fr.MockDBRepository.EXPECT().
+					GetURLList(gomock.Any(), "user123").
+					Return([]models.BaseURLDTO{}, nil) // Пустой список
+			},
+			expectedCode: http.StatusNoContent,
+			expectedBody: "", // Ожидаем пустое тело
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := tt.setupRepo()
+			if fr, ok := repo.(*FullRepo); ok && tt.expectCall != nil {
+				tt.expectCall(fr)
+			}
+
+			service := services.New(repo, cfg, nil)
+			handler := New(service)
+
+			req := httptest.NewRequest(http.MethodGet, "/api/user/urls", nil)
+			if tt.setupContext != nil {
+				req = tt.setupContext(req)
+			}
+			w := httptest.NewRecorder()
+
+			handler.APIGetUserURLs(w, req)
+
+			res := w.Result()
+			defer func() {
+				require.NoError(t, req.Body.Close())
+			}()
+
+			assert.Equal(t, tt.expectedCode, res.StatusCode)
+			if tt.expectedBody != "" {
+				body, _ := io.ReadAll(res.Body)
+				assert.JSONEq(t, tt.expectedBody, string(body))
+			} else {
+				// Проверяем что тело ответа пустое
+				body, _ := io.ReadAll(res.Body)
+				assert.Empty(t, string(body))
+			}
+			err := res.Body.Close()
+			require.NoError(t, err)
+		})
+	}
+}
+
 func TestHandler_PingDB(t *testing.T) {
 	cfg := &config.Config{BaseURL: "http://localhost:8000"} // Добавляем конфиг
 	err := logger.InitLogger(cfg.Environment)
@@ -300,7 +406,7 @@ func TestHandler_PingDB(t *testing.T) {
 	m := mocks.NewMockRepository(ctrl)
 	m.EXPECT().Ping(context.Background()).Return(nil)
 	require.NoError(t, err)
-	service := services.New(m, cfg)
+	service := services.New(m, cfg, nil)
 	handler := New(service)
 
 	t.Run("Mock test db", func(t *testing.T) {

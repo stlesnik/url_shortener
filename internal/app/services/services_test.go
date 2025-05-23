@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"github.com/stlesnik/url_shortener/internal/app/models"
 	"github.com/stlesnik/url_shortener/internal/app/repository"
 	"github.com/stlesnik/url_shortener/internal/config"
 	"github.com/stlesnik/url_shortener/internal/logger"
@@ -18,20 +19,24 @@ type MockRepository struct {
 
 func (m *MockRepository) Ping(_ context.Context) error { return nil }
 
-func (m *MockRepository) Save(_ context.Context, shortURL, longURL string) (bool, error) {
+func (m *MockRepository) SaveURL(_ context.Context, shortURL, longURL string, _ string) (bool, error) {
 	if m.fail {
-		return false, ErrSave
+		return false, ErrServiceSave
 	}
 	m.storage[shortURL] = longURL
 	return false, nil
 }
 
-func (m *MockRepository) Get(_ context.Context, shortURL string) (string, error) {
+func (m *MockRepository) GetURL(_ context.Context, shortURL string) (models.GetURLDTO, error) {
 	val, exists := m.storage[shortURL]
 	if !exists {
-		return "", repository.ErrURLNotFound
+		return models.GetURLDTO{}, repository.ErrURLNotFound
 	}
-	return val, nil
+	return models.GetURLDTO{OriginalURL: val, IsDeleted: false}, nil
+}
+
+func (m *MockRepository) GetURLList(_ context.Context, _ string) ([]models.BaseURLDTO, error) {
+	return nil, nil
 }
 
 func (m *MockRepository) Close() error {
@@ -66,9 +71,9 @@ func TestServices_CreateSavePrepareShortURL(t *testing.T) {
 				storage: make(map[string]string),
 				fail:    tt.repoFailure,
 			}
-			service := New(repo, cfg)
+			service := New(repo, cfg, nil)
 
-			shortURL, _, errMsg := service.CreateSavePrepareShortURL(context.Background(), tt.longURL)
+			shortURL, _, errMsg := service.CreateSavePrepareShortURL(context.Background(), tt.longURL, "")
 
 			if tt.wantError {
 				assert.NotEmpty(t, errMsg)
@@ -83,7 +88,7 @@ func TestServices_CreateSavePrepareShortURL(t *testing.T) {
 }
 
 func TestServices_CreateShortURLHash(t *testing.T) {
-	service := New(nil, &config.Config{})
+	service := New(nil, &config.Config{}, nil)
 
 	t.Run("Hash generation", func(t *testing.T) {
 		url1 := "https://google.com"
@@ -120,9 +125,9 @@ func TestServices_SaveShortURL(t *testing.T) {
 				storage: make(map[string]string),
 				fail:    tt.repoFailure,
 			}
-			service := New(repo, cfg)
+			service := New(repo, cfg, nil)
 
-			_, err := service.SaveShortURL(context.Background(), hash, longURL)
+			_, err := service.SaveShortURL(context.Background(), hash, longURL, "")
 
 			if tt.wantError {
 				assert.Error(t, err)
@@ -161,7 +166,7 @@ func TestServices_SaveBatchShortURL(t *testing.T) {
 				fail:    tt.repoFailure,
 			}
 
-			service := New(repo, cfg)
+			service := New(repo, cfg, nil)
 
 			err := service.SaveBatchShortURL(context.Background(), urlPairList)
 
@@ -176,7 +181,7 @@ func TestServices_SaveBatchShortURL(t *testing.T) {
 
 func TestServices_PrepareShortURL(t *testing.T) {
 	cfg := &config.Config{BaseURL: "http://localhost:8080"}
-	service := New(nil, cfg)
+	service := New(nil, cfg, nil)
 	hash := "abc123"
 
 	result := service.PrepareShortURL(hash)
@@ -188,11 +193,11 @@ func TestServices_GetLongURLFromDB(t *testing.T) {
 		name        string
 		hash        string
 		prepopulate bool
-		wantURL     string
+		wantRes     models.GetURLDTO
 		wantError   bool
 	}{
-		{"Existing URL", "abc123", true, "https://google.com", false},
-		{"Non-existent URL", "badhash", false, "", true},
+		{"Existing URL", "abc123", true, models.GetURLDTO{OriginalURL: "https://google.com", IsDeleted: false}, false},
+		{"Non-existent URL", "badhash", false, models.GetURLDTO{}, true},
 	}
 
 	cfg := &config.Config{}
@@ -201,9 +206,9 @@ func TestServices_GetLongURLFromDB(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := &MockRepository{storage: make(map[string]string)}
 			if tt.prepopulate {
-				repo.storage[tt.hash] = tt.wantURL
+				repo.storage[tt.hash] = tt.wantRes.OriginalURL
 			}
-			service := New(repo, cfg)
+			service := New(repo, cfg, nil)
 
 			result, err := service.GetLongURLFromDB(context.Background(), tt.hash)
 
@@ -212,7 +217,7 @@ func TestServices_GetLongURLFromDB(t *testing.T) {
 				assert.Empty(t, result)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.wantURL, result)
+				assert.Equal(t, tt.wantRes, result)
 			}
 		})
 	}

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
+	"github.com/stlesnik/url_shortener/internal/app/models"
 	"github.com/stlesnik/url_shortener/internal/logger"
 	"os"
 	"sync"
@@ -46,10 +47,10 @@ func (f *FileStorage) Ping(_ context.Context) error {
 	return fmt.Errorf("file repository is empty")
 }
 
-func (f *FileStorage) Save(ctx context.Context, short string, long string) (isDouble bool, err error) {
+func (f *FileStorage) SaveURL(ctx context.Context, short string, long string, _ string) (isDouble bool, err error) {
 	select {
 	case <-ctx.Done():
-		logger.Sugaarz.Info("Client closed connection while in url Save func")
+		logger.Sugaarz.Info("Client closed connection while in url SaveURL func")
 		return false, ctx.Err()
 	default:
 	}
@@ -74,15 +75,15 @@ func (f *FileStorage) Save(ctx context.Context, short string, long string) (isDo
 	return false, err
 }
 
-func (f *FileStorage) Get(_ context.Context, short string) (string, error) {
+func (f *FileStorage) GetURL(_ context.Context, short string) (models.GetURLDTO, error) {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
 
 	val, exists := f.data[short]
 	if !exists {
-		return "", ErrURLNotFound
+		return models.GetURLDTO{}, ErrURLNotFound
 	}
-	return val, nil
+	return models.GetURLDTO{OriginalURL: val, IsDeleted: false}, nil
 }
 
 func (f *FileStorage) Close() error {
