@@ -75,7 +75,6 @@ func (h *Handler) SaveURL(res http.ResponseWriter, req *http.Request) {
 	res.Header().Set("Content-Type", "text/plain")
 	if isDouble {
 		res.WriteHeader(http.StatusConflict)
-
 	} else {
 		res.WriteHeader(http.StatusCreated)
 
@@ -101,7 +100,7 @@ func (h *Handler) GetLongURL(res http.ResponseWriter, req *http.Request) {
 
 	} else {
 		WriteError(res, "Short url not found", http.StatusBadRequest, false)
-		return
+		res.WriteHeader(http.StatusBadRequest)
 	}
 }
 

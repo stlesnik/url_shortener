@@ -111,10 +111,12 @@ func (d *DataBase) DeleteURLList(values []interface{}, placeholders []string) (i
 
 	result, err := d.db.Exec(query, values...)
 	if err != nil {
+		logger.Sugaarz.Errorf("\n\nerror while exec: %w\nquery=%v\nvalues=%v\n\n", err, query, strings.Trim(fmt.Sprintf("%v", values), "[]"))
 		return 0, err
 	}
 	ra, err := result.RowsAffected()
 	if err != nil {
+		logger.Sugaarz.Errorf("\n\nerror while RowsAffected: %w\n\n", err)
 		return 0, err
 	}
 	return ra, nil

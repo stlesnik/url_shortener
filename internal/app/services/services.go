@@ -15,8 +15,9 @@ import (
 )
 
 const (
-	bufferSize           = 5
-	deleteTickerInterval = 1 * time.Second
+	bufferSize           = 10
+	deleteTickerInterval = 100 * time.Millisecond
+	DeleteBatchSize      = 100
 )
 
 var (
@@ -28,7 +29,6 @@ type URLShortenerService struct {
 	cfg           *config.Config
 	deleteCh      chan models.DeleteTask
 	daemonsDoneCh chan struct{}
-	saveSemaphore chan struct{}
 }
 
 func New(repo Repository, cfg *config.Config, daemonsDoneCh chan struct{}) *URLShortenerService {
@@ -37,7 +37,6 @@ func New(repo Repository, cfg *config.Config, daemonsDoneCh chan struct{}) *URLS
 		cfg,
 		make(chan models.DeleteTask, bufferSize),
 		daemonsDoneCh,
-		make(chan struct{}, 5),
 	}
 	return s.init()
 }
@@ -50,48 +49,16 @@ func (s *URLShortenerService) init() *URLShortenerService {
 }
 
 func (s *URLShortenerService) CreateSavePrepareShortURL(ctx context.Context, longURL string, userID string) (string, bool, string) {
-	resultChan := make(chan struct {
-		shortURL string
-		isDouble bool
-		errMsg   string
-	})
-	go func() {
-		// Захватываем слот в семафоре
-		s.saveSemaphore <- struct{}{}
-		defer func() { <-s.saveSemaphore }()
-
-		urlHash, err := s.CreateShortURLHash(longURL)
-		if err != nil {
-			resultChan <- struct {
-				shortURL string
-				isDouble bool
-				errMsg   string
-			}{"", false, "Failed to create short URL, err: " + err.Error()}
-			return
-		}
-
-		isDouble, err := s.SaveShortURL(ctx, urlHash, longURL, userID)
-		if err != nil {
-			resultChan <- struct {
-				shortURL string
-				isDouble bool
-				errMsg   string
-			}{"", false, "Failed to save short url, err: " + err.Error()}
-			return
-		}
-
-		shortURL := s.PrepareShortURL(urlHash)
-		resultChan <- struct {
-			shortURL string
-			isDouble bool
-			errMsg   string
-		}{shortURL, isDouble, ""}
-		close(resultChan)
-	}()
-
-	// Ожидаем результат из горутины
-	result := <-resultChan
-	return result.shortURL, result.isDouble, result.errMsg
+	urlHash, err := s.CreateShortURLHash(longURL)
+	if err != nil {
+		return "", false, "Failed to create short URL, err: " + err.Error()
+	}
+	isDouble, err := s.SaveShortURL(ctx, urlHash, longURL, userID)
+	if err != nil {
+		return "", false, "Failed to save short url, err: " + err.Error()
+	}
+	shortURL := s.PrepareShortURL(urlHash)
+	return shortURL, isDouble, ""
 }
 
 func (s *URLShortenerService) CreateShortURLHash(longURL string) (string, error) {
@@ -185,38 +152,43 @@ func (s *URLShortenerService) DeleteUrls() {
 		placeholders []string
 	)
 	plInd := 1
-	do := func() {
-		logger.Sugaarz.Debugw("deleting urls for userID")
-		rowsAffected, err := s.repo.(DBRepository).DeleteURLList(values, placeholders)
+	do := func(v []interface{}, pl []string) {
+		logger.Sugaarz.Debugf("deleting urls for userID: values len=%v placeholders len=%v", len(v), len(pl))
+		rowsAffected, err := s.repo.(DBRepository).DeleteURLList(v, pl)
 		if err != nil {
 			logger.Sugaarz.Error(err)
 		} else {
 			logger.Sugaarz.Debug(rowsAffected, "rows were updated on delete")
 		}
-		values = nil
-		placeholders = nil
-		plInd = 1
 	}
 
 loop:
 	for {
 		select {
 		case <-s.daemonsDoneCh:
-			if len(values) == 0 {
-				continue
+			if len(values) != 0 {
+				go do(values, placeholders)
 			}
-			do()
 			break loop
 		case task := <-s.deleteCh:
 			values = append(values, task.UserID, task.URLHash)
 			placeholders = append(placeholders, fmt.Sprintf("($%d, $%d)", plInd, plInd+1))
 			plInd = plInd + 2
 
-		case <-ticker.C:
-			if len(values) == 0 {
-				continue
+			if len(values) >= DeleteBatchSize {
+				go do(values, placeholders)
+				values = nil
+				placeholders = nil
+				plInd = 1
 			}
-			do()
+
+		case <-ticker.C:
+			if len(values) != 0 {
+				go do(values, placeholders)
+				values = nil
+				placeholders = nil
+				plInd = 1
+			}
 		}
 	}
 }
