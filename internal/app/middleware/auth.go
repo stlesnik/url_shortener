@@ -66,11 +66,11 @@ func createSignedCookie(userID string, secretKey string) (*http.Cookie, error) {
 	}
 
 	return &http.Cookie{
-		Name:     "Authorization",
+		Name:     "auth_token",
 		Value:    tokenString,
 		Expires:  time.Now().Add(TokenExp),
 		HttpOnly: true,
-		Secure:   true,
+		Path:     "/",
 	}, nil
 }
 
@@ -85,7 +85,7 @@ func getUserIDFromCookie(r *http.Request, secretKey string) (string, error) {
 	//	return "", fmt.Errorf("invalid Authorization header")
 	//}
 
-	cookie, err := r.Cookie("Authorization")
+	cookie, err := r.Cookie("auth_token")
 	logger.Sugaarz.Warnf("\n---FOR TEST---\nauth header=%v\ncookie=%v\n---FOR TEST---\n", auth, cookie)
 	if err != nil {
 		return "", fmt.Errorf("failed to get Authorization cookie")
