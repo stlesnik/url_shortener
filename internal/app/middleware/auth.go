@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/stlesnik/url_shortener/internal/config"
@@ -41,7 +40,7 @@ func WithAuth(cfg *config.Config, next http.HandlerFunc) http.HandlerFunc {
 			}
 
 			http.SetCookie(w, cookie)
-			w.Header().Set("Authorization", "Bearer "+cookie.Value)
+			//w.Header().Set("Authorization", "Bearer "+cookie.Value)
 			ctx := context.WithValue(r.Context(), UserIDKeyName, newUserID)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		}
@@ -76,18 +75,23 @@ func createSignedCookie(userID string, secretKey string) (*http.Cookie, error) {
 }
 
 func getUserIDFromCookie(r *http.Request, secretKey string) (string, error) {
-	auth := r.Header.Get("Authorization")
-	if auth == "" {
+	//auth := r.Header.Get("Authorization")
+	//if auth == "" {
+	//	return "", fmt.Errorf("failed to get Authorization cookie")
+	//}
+	//
+	//authToken := strings.Split(auth, " ")
+	//if len(authToken) != 2 || authToken[0] != "Bearer" {
+	//	return "", fmt.Errorf("invalid Authorization header")
+	//}
+
+	cookie, err := r.Cookie("Authorization")
+	if err != nil {
 		return "", fmt.Errorf("failed to get Authorization cookie")
 	}
 
-	authToken := strings.Split(auth, " ")
-	if len(authToken) != 2 || authToken[0] != "Bearer" {
-		return "", fmt.Errorf("invalid Authorization header")
-	}
-
 	claims := &Claims{}
-	token, err := jwt.ParseWithClaims(authToken[1], claims, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(cookie.Value, claims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
