@@ -86,11 +86,11 @@ func getUserIDFromCookie(r *http.Request, secretKey string) (string, error) {
 	//}
 
 	cookie, err := r.Cookie("Authorization")
+	logger.Sugaarz.Warnf("\n---FOR TEST---\nauth header=%v\ncookie=%v\n---FOR TEST---\n", auth, cookie)
 	if err != nil {
 		return "", fmt.Errorf("failed to get Authorization cookie")
 	}
 
-	logger.Sugaarz.Warnf("\n---FOR TEST---\nauth header=%v\ncookie=%v\n---FOR TEST---\n", auth, cookie)
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(cookie.Value, claims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
