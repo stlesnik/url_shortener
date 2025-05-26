@@ -40,7 +40,6 @@ func WithAuth(cfg *config.Config, next http.HandlerFunc) http.HandlerFunc {
 			}
 
 			http.SetCookie(w, cookie)
-			//w.Header().Set("Authorization", "Bearer "+cookie.Value)
 			ctx := context.WithValue(r.Context(), UserIDKeyName, newUserID)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		}
@@ -75,18 +74,7 @@ func createSignedCookie(userID string, secretKey string) (*http.Cookie, error) {
 }
 
 func getUserIDFromCookie(r *http.Request, secretKey string) (string, error) {
-	auth := r.Header.Get("Authorization")
-	//if auth == "" {
-	//	return "", fmt.Errorf("failed to get Authorization cookie")
-	//}
-	//
-	//authToken := strings.Split(auth, " ")
-	//if len(authToken) != 2 || authToken[0] != "Bearer" {
-	//	return "", fmt.Errorf("invalid Authorization header")
-	//}
-
 	cookie, err := r.Cookie("auth_token")
-	logger.Sugaarz.Warnf("\n---FOR TEST---\nauth header=%v\ncookie=%v\n---FOR TEST---\n", auth, cookie)
 	if err != nil {
 		return "", fmt.Errorf("failed to get Authorization cookie")
 	}
