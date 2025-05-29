@@ -29,10 +29,11 @@ var (
 )
 
 type URLShortenerService struct {
-	repo          Repository
-	cfg           *config.Config
-	deleteCh      chan models.DeleteTask
-	daemonsDoneCh chan struct{}
+	repo            Repository
+	cfg             *config.Config
+	deleteCh        chan models.DeleteTask
+	daemonsDoneCh   chan struct{}
+	deleteSemaphore chan struct{}
 }
 
 func New(repo Repository, cfg *config.Config, daemonsDoneCh chan struct{}) *URLShortenerService {
@@ -41,6 +42,7 @@ func New(repo Repository, cfg *config.Config, daemonsDoneCh chan struct{}) *URLS
 		cfg,
 		make(chan models.DeleteTask, bufferSize),
 		daemonsDoneCh,
+		make(chan struct{}, 5),
 	}
 	return s.init()
 }
@@ -256,4 +258,12 @@ func (s *URLShortenerService) PrepareBatch(apiBatchReq []models.APIRequestPrepar
 		}
 	}
 	return
+}
+
+func (s *URLShortenerService) SendDeleteTasks(userID string, hashes []string) {
+	s.deleteSemaphore <- struct{}{}
+	defer func() {
+		<-s.deleteSemaphore
+	}()
+	s.GenerateDeleteTasks(userID, hashes)
 }

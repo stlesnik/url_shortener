@@ -10,14 +10,12 @@ import (
 )
 
 type Handler struct {
-	service         *services.URLShortenerService // Вместо прямого доступа к repo и cfg
-	deleteSemaphore chan struct{}
+	service *services.URLShortenerService // Вместо прямого доступа к repo и cfg
 }
 
 func New(service *services.URLShortenerService) *Handler {
 	return &Handler{
-		service:         service,
-		deleteSemaphore: make(chan struct{}, 5),
+		service: service,
 	}
 }
 
@@ -217,13 +215,7 @@ func (h *Handler) APIDeleteUserURLs(res http.ResponseWriter, req *http.Request) 
 		WriteError(res, "Failed to decode body", http.StatusInternalServerError, true)
 		return
 	}
-	go func() {
-		h.deleteSemaphore <- struct{}{}
-		defer func() {
-			<-h.deleteSemaphore
-		}()
-		h.service.GenerateDeleteTasks(userID, urlHashes)
-	}()
+	go h.service.SendDeleteTasks(userID, urlHashes)
 
 	res.WriteHeader(http.StatusAccepted)
 	logger.Sugaarz.Debugw("sent APIDeleteUserURLs response")
