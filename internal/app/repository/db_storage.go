@@ -38,7 +38,7 @@ func (d *DataBase) Ping(ctx context.Context) error {
 	return nil
 }
 
-func (d *DataBase) SaveURL(ctx context.Context, short string, long string, userID string) (isDouble bool, err error) {
+func (d *DataBase) SaveURL(ctx context.Context, short string, long string, userID string) (bool, error) {
 	_, dbErr := d.db.ExecContext(ctx, "INSERT INTO url (short_url, original_url, user_id) VALUES ($1, $2, $3)", short, long, userID)
 	if dbErr != nil {
 		var pgErr *pgconn.PgError
@@ -90,8 +90,9 @@ func (d *DataBase) GetURL(ctx context.Context, short string) (models.GetURLDTO, 
 	return urlDTO, nil
 }
 
-func (d *DataBase) GetURLList(ctx context.Context, userID string) (data []models.BaseURLDTO, err error) {
-	err = d.db.SelectContext(ctx, &data, "SELECT original_url, short_url FROM url WHERE user_id = $1", userID)
+func (d *DataBase) GetURLList(ctx context.Context, userID string) ([]models.BaseURLDTO, error) {
+	var data []models.BaseURLDTO
+	err := d.db.SelectContext(ctx, &data, "SELECT original_url, short_url FROM url WHERE user_id = $1", userID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrURLNotFound
 	}
@@ -99,7 +100,7 @@ func (d *DataBase) GetURLList(ctx context.Context, userID string) (data []models
 		return nil, fmt.Errorf("%w: %v", ErrGetURLList, err)
 	}
 	logger.Sugaarz.Infow("Got urls list from db", "data", data, "userID", userID)
-	return
+	return data, err
 }
 
 func (d *DataBase) DeleteURLList(values []interface{}, placeholders []string) (int64, error) {

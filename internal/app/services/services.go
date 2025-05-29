@@ -76,9 +76,9 @@ func (s *URLShortenerService) CreateShortURLHash(longURL string) (string, error)
 	return base64.URLEncoding.EncodeToString(h.Sum(nil)), nil
 }
 
-func (s *URLShortenerService) SaveShortURL(ctx context.Context, urlHash, longURL string, userID string) (isDouble bool, err error) {
-	isDouble, err = s.repo.SaveURL(ctx, urlHash, longURL, userID)
-	return
+func (s *URLShortenerService) SaveShortURL(ctx context.Context, urlHash, longURL string, userID string) (bool, error) {
+	isDouble, err := s.repo.SaveURL(ctx, urlHash, longURL, userID)
+	return isDouble, err
 }
 
 func (s *URLShortenerService) SaveBatchShortURL(ctx context.Context, urlPairList []repository.URLPair) error {
@@ -215,8 +215,8 @@ loop:
 
 			if len(values) >= DeleteBatchSize {
 				go do(values, placeholders)
-				values = nil
-				placeholders = nil
+				values = values[:0]
+				placeholders = placeholders[:0]
 				plInd = 1
 			}
 
