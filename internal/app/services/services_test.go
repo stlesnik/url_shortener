@@ -6,6 +6,9 @@ import (
 	"github.com/stlesnik/url_shortener/internal/app/repository"
 	"github.com/stlesnik/url_shortener/internal/config"
 	"github.com/stlesnik/url_shortener/internal/logger"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -73,13 +76,13 @@ func TestServices_CreateSavePrepareShortURL(t *testing.T) {
 			}
 			service := New(repo, cfg, nil)
 
-			shortURL, _, errMsg := service.CreateSavePrepareShortURL(context.Background(), tt.longURL, "")
+			shortURL, _, err := service.GenerateShortURL(context.Background(), tt.longURL, "")
 
 			if tt.wantError {
-				assert.NotEmpty(t, errMsg)
+				assert.Error(t, err)
 				assert.Empty(t, shortURL)
 			} else {
-				assert.Empty(t, errMsg)
+				assert.NoError(t, err)
 				assert.Contains(t, shortURL, cfg.BaseURL)
 				assert.NotEmpty(t, shortURL)
 			}
@@ -218,6 +221,57 @@ func TestServices_GetLongURLFromDB(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.wantRes, result)
+			}
+		})
+	}
+}
+
+func TestHandler_GetLongURLFromReq(t *testing.T) {
+	cfg := &config.Config{BaseURL: "http://localhost:8000"}
+	err := logger.InitLogger(cfg.Environment)
+	require.NoError(t, err)
+	repo := repository.NewInMemoryRepository()
+
+	service := New(repo, cfg, nil)
+
+	type expected struct {
+		longURLStr string
+		error      string
+	}
+	tests := []struct {
+		name     string
+		longURL  string
+		expected expected
+	}{
+		{
+			name:     "good case",
+			longURL:  "http://mbrgaoyhv.yandex",
+			expected: expected{longURLStr: "http://mbrgaoyhv.yandex", error: ""},
+		},
+		{
+			name:     "bad body",
+			longURL:  ``,
+			expected: expected{longURLStr: "", error: "error getting url"},
+		},
+		{
+			name:     "bad url",
+			longURL:  "://mbrgaoyhv.yandex",
+			expected: expected{longURLStr: "", error: "got incorrect url to shorten: url=://mbrgaoyhv.yandex, err=got incorrect url to shorten: url=://mbrgaoyhv.yandex, err= parse \"://mbrgaoyhv.yandex\": missing protocol scheme: invalid url to shorten"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tt.longURL))
+			req.Header.Add("Content-Type", "text/plain")
+
+			longURLStr, err := service.GetLongURLFromReq(req)
+
+			if tt.expected.error != "" {
+				require.EqualError(t, err, tt.expected.error)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tt.expected.longURLStr, longURLStr)
 			}
 		})
 	}

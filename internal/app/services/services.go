@@ -5,11 +5,15 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/go-chi/chi/v5"
+	"github.com/stlesnik/url_shortener/internal/app/middleware"
 	"github.com/stlesnik/url_shortener/internal/app/models"
 	"github.com/stlesnik/url_shortener/internal/app/repository"
 	"github.com/stlesnik/url_shortener/internal/config"
 	"github.com/stlesnik/url_shortener/internal/logger"
 	"hash/fnv"
+	"io"
+	"net/http"
 	"net/url"
 	"time"
 )
@@ -48,17 +52,17 @@ func (s *URLShortenerService) init() *URLShortenerService {
 	return s
 }
 
-func (s *URLShortenerService) CreateSavePrepareShortURL(ctx context.Context, longURL string, userID string) (string, bool, string) {
+func (s *URLShortenerService) GenerateShortURL(ctx context.Context, longURL, userID string) (string, bool, error) {
 	urlHash, err := s.CreateShortURLHash(longURL)
 	if err != nil {
-		return "", false, "Failed to create short URL, err: " + err.Error()
+		return "", false, fmt.Errorf("failed to create short URL, err: %w", err)
 	}
 	isDouble, err := s.SaveShortURL(ctx, urlHash, longURL, userID)
 	if err != nil {
-		return "", false, "Failed to save short url, err: " + err.Error()
+		return "", false, fmt.Errorf("failed to save short url, err: %w", err)
 	}
 	shortURL := s.PrepareShortURL(urlHash)
-	return shortURL, isDouble, ""
+	return shortURL, isDouble, nil
 }
 
 func (s *URLShortenerService) CreateShortURLHash(longURL string) (string, error) {
@@ -109,6 +113,38 @@ func (s *URLShortenerService) PrepareShortURL(urlHash string) string {
 func (s *URLShortenerService) GetLongURLFromDB(ctx context.Context, URLHash string) (models.GetURLDTO, error) {
 	urlDTO, err := s.repo.GetURL(ctx, URLHash)
 	return urlDTO, err
+}
+
+func (s *URLShortenerService) GetLongURLFromReq(req *http.Request) (string, error) {
+	body, err := io.ReadAll(req.Body)
+	if err != nil {
+		return "", ErrReadingBody
+	}
+	longURLStr := string(body)
+	if longURLStr == "" {
+		return "", ErrDidntGetURL
+	}
+	err = s.ValidateURL(longURLStr)
+	if err != nil {
+		return "", fmt.Errorf("got incorrect url to shorten: url=%v, err=%v: %w", longURLStr, err, ErrInvalidURL)
+	}
+	return longURLStr, nil
+}
+
+func (s *URLShortenerService) GetUserID(req *http.Request) (string, error) {
+	userIDVal := req.Context().Value(middleware.UserIDKeyName)
+	if userIDVal == nil {
+		return "", ErrNoUserID
+	}
+	userID, ok := userIDVal.(string)
+	if !ok {
+		return "", ErrConvertingUserID
+	}
+	return userID, nil
+}
+
+func (s *URLShortenerService) GetURLHash(req *http.Request) string {
+	return chi.URLParam(req, "id")
 }
 
 func (s *URLShortenerService) GetUserURLs(ctx context.Context, userID string) ([]models.BaseURLResponse, error) {
@@ -195,4 +231,29 @@ loop:
 
 func (s *URLShortenerService) PingDB(ctx context.Context) error {
 	return s.repo.Ping(ctx)
+}
+
+func (s *URLShortenerService) PrepareBatch(apiBatchReq []models.APIRequestPrepareBatchShURL) (
+	apiBatchResp []models.APIResponsePrepareBatchShURL,
+	batch []repository.URLPair,
+	validationErrors []error,
+	err error) {
+
+	for _, obj := range apiBatchReq {
+		validateErr := s.ValidateURL(obj.LongURL)
+		if validateErr != nil {
+			logger.Sugaarz.Errorw("got incorrect url to shorten in api batch: "+obj.LongURL, "err", validateErr)
+			validationErrors = append(validationErrors, validateErr)
+		} else {
+			urlHash, errS := s.CreateShortURLHash(obj.LongURL)
+			if errS != nil {
+				err = errS
+				return
+			}
+			batch = append(batch, repository.URLPair{URLHash: urlHash, LongURL: obj.LongURL})
+			apiBatchResp = append(apiBatchResp, models.APIResponsePrepareBatchShURL{
+				CorrelationID: obj.CorrelationID, ShortURL: s.PrepareShortURL(urlHash)})
+		}
+	}
+	return
 }
