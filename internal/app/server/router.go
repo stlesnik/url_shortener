@@ -8,12 +8,14 @@ import (
 )
 
 func (s *Server) setupRoutes() {
-	service := services.New(s.repo, s.cfg)
+	service := services.New(s.repo, s.cfg, s.daemonsDoneCh)
 	hs := handlers.New(service)
 	wrap := func(h http.HandlerFunc) http.HandlerFunc {
-		return middleware.WithLogging(
-			middleware.WithDecompress(
-				middleware.WithCompress(h),
+		return middleware.WithAuth(s.cfg,
+			middleware.WithLogging(
+				middleware.WithDecompress(
+					middleware.WithCompress(h),
+				),
 			),
 		)
 	}
@@ -22,5 +24,7 @@ func (s *Server) setupRoutes() {
 	s.router.Get("/{id}", wrap(hs.GetLongURL))
 	s.router.Post("/api/shorten", wrap(hs.APIPrepareShortURL))
 	s.router.Post("/api/shorten/batch", wrap(hs.APIPrepareBatchShortURL))
+	s.router.Get("/api/user/urls", wrap(hs.APIGetUserURLs))
+	s.router.Delete("/api/user/urls", wrap(hs.APIDeleteUserURLs))
 
 }

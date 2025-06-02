@@ -9,5 +9,6 @@ var (
 	ErrPingDB           = errors.New("error while ping to db")
 	ErrSaveURL          = errors.New("error while saving url")
 	ErrGetURL           = errors.New("error while getting url")
+	ErrGetURLList       = errors.New("error while getting url list")
 	ErrBeginTransaction = errors.New("error while beginning transaction")
 )

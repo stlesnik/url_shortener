@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"github.com/stlesnik/url_shortener/internal/app/models"
 	"sync"
 )
 
@@ -22,21 +23,21 @@ func (s *InMemoryRepository) Ping(_ context.Context) error {
 	return fmt.Errorf("in memory repository is empty")
 }
 
-func (s *InMemoryRepository) Save(_ context.Context, short string, long string) (isDouble bool, err error) {
+func (s *InMemoryRepository) SaveURL(_ context.Context, short string, long string, _ string) (isDouble bool, err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.data[short] = long
 	return false, nil
 }
 
-func (s *InMemoryRepository) Get(_ context.Context, short string) (string, error) {
+func (s *InMemoryRepository) GetURL(_ context.Context, short string) (models.GetURLDTO, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	val, exists := s.data[short]
 	if !exists {
-		return "", ErrURLNotFound
+		return models.GetURLDTO{}, ErrURLNotFound
 	}
-	return val, nil
+	return models.GetURLDTO{OriginalURL: val, IsDeleted: false}, nil
 }
 
 func (s *InMemoryRepository) Close() error { return nil }

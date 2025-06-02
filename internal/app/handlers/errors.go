@@ -1,15 +1,8 @@
 package handlers
 
 import (
-	"errors"
 	"github.com/stlesnik/url_shortener/internal/logger"
 	"net/http"
-)
-
-var (
-	ErrReadingBody = errors.New("error reading body")
-	ErrDidntGetURL = errors.New("error getting url")
-	ErrInvalidURL  = errors.New("invalid url to shorten")
 )
 
 func WriteError(w http.ResponseWriter, msg string, code int, trace bool) {

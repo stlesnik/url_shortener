@@ -9,6 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+	models "github.com/stlesnik/url_shortener/internal/app/models"
 )
 
 // MockRepository is a mock of Repository interface.
@@ -48,19 +49,19 @@ func (mr *MockRepositoryMockRecorder) Close() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockRepository)(nil).Close))
 }
 
-// Get mocks base method.
-func (m *MockRepository) Get(arg0 context.Context, arg1 string) (string, error) {
+// GetURL mocks base method.
+func (m *MockRepository) GetURL(arg0 context.Context, arg1 string) (models.GetURLDTO, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", arg0, arg1)
-	ret0, _ := ret[0].(string)
+	ret := m.ctrl.Call(m, "GetURL", arg0, arg1)
+	ret0, _ := ret[0].(models.GetURLDTO)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Get indicates an expected call of Get.
-func (mr *MockRepositoryMockRecorder) Get(arg0, arg1 interface{}) *gomock.Call {
+// GetURL indicates an expected call of GetURL.
+func (mr *MockRepositoryMockRecorder) GetURL(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockRepository)(nil).Get), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetURL", reflect.TypeOf((*MockRepository)(nil).GetURL), arg0, arg1)
 }
 
 // Ping mocks base method.
@@ -77,17 +78,17 @@ func (mr *MockRepositoryMockRecorder) Ping(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockRepository)(nil).Ping), arg0)
 }
 
-// Save mocks base method.
-func (m *MockRepository) Save(arg0 context.Context, arg1, arg2 string) (bool, error) {
+// SaveURL mocks base method.
+func (m *MockRepository) SaveURL(arg0 context.Context, arg1, arg2, arg3 string) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Save", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "SaveURL", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Save indicates an expected call of Save.
-func (mr *MockRepositoryMockRecorder) Save(arg0, arg1, arg2 interface{}) *gomock.Call {
+// SaveURL indicates an expected call of SaveURL.
+func (mr *MockRepositoryMockRecorder) SaveURL(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockRepository)(nil).Save), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveURL", reflect.TypeOf((*MockRepository)(nil).SaveURL), arg0, arg1, arg2, arg3)
 }

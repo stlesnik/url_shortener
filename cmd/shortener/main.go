@@ -10,6 +10,8 @@ import (
 )
 
 func main() {
+	daemonsDoneCh := make(chan struct{})
+	defer close(daemonsDoneCh)
 	// конфиг
 	cfg, err := config.New()
 	if err != nil {
@@ -38,7 +40,7 @@ func main() {
 		}
 	}()
 
-	srv := server.New(repo, cfg)
+	srv := server.New(repo, cfg, daemonsDoneCh)
 
 	log.Printf("Сервер запущен на %s", cfg.ServerAddress)
 	err = srv.Start()
