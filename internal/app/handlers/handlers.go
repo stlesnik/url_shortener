@@ -10,16 +10,19 @@ import (
 	"github.com/stlesnik/url_shortener/internal/logger"
 )
 
+// Handler handles HTTP requests for the URL shortener service.
 type Handler struct {
 	service *services.URLShortenerService // Вместо прямого доступа к repo и cfg
 }
 
+// New creates a new Handler with the provided service.
 func New(service *services.URLShortenerService) *Handler {
 	return &Handler{
 		service: service,
 	}
 }
 
+// SaveURL handles POST requests to save a new URL and return its shortened version.
 func (h *Handler) SaveURL(res http.ResponseWriter, req *http.Request) {
 	//get user id
 	userID, err := h.service.GetUserID(req)
@@ -63,6 +66,7 @@ func (h *Handler) SaveURL(res http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// GetLongURL handles GET requests to retrieve the original URL from repository by its short hash.
 func (h *Handler) GetLongURL(res http.ResponseWriter, req *http.Request) {
 	URLHash := h.service.GetURLHash(req)
 	urlDTO, err := h.service.GetLongURLFromDB(req.Context(), URLHash)
@@ -82,6 +86,7 @@ func (h *Handler) GetLongURL(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusGone)
 }
 
+// APIPrepareShortURL handles API requests to shorten a URL and returns the result in JSON.
 func (h *Handler) APIPrepareShortURL(res http.ResponseWriter, req *http.Request) {
 	logger.Sugaarz.Debugw("got APIPrepareShortURL request")
 	var apiReq models.APIRequestPrepareShURL
@@ -122,6 +127,7 @@ func (h *Handler) APIPrepareShortURL(res http.ResponseWriter, req *http.Request)
 	logger.Sugaarz.Debugw("sent APIPrepareShortURL response")
 }
 
+// APIPrepareBatchShortURL handles API requests to shorten a batch of URLs and returns the results in JSON.
 func (h *Handler) APIPrepareBatchShortURL(res http.ResponseWriter, req *http.Request) {
 	//process request
 	logger.Sugaarz.Debugw("got APISaveBatchURL request")
@@ -160,6 +166,7 @@ func (h *Handler) APIPrepareBatchShortURL(res http.ResponseWriter, req *http.Req
 	logger.Sugaarz.Debugw("sent APISaveBatchURL response")
 }
 
+// APIGetUserURLs handles API requests to get all URLs for a user from repository.
 func (h *Handler) APIGetUserURLs(res http.ResponseWriter, req *http.Request) {
 	logger.Sugaarz.Debugw("got APIGetUserURLs response")
 	userID, err := h.service.GetUserID(req)
@@ -195,6 +202,7 @@ func (h *Handler) APIGetUserURLs(res http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// APIDeleteUserURLs handles API requests to delete a batch of user URLs asynchronously.
 func (h *Handler) APIDeleteUserURLs(res http.ResponseWriter, req *http.Request) {
 	logger.Sugaarz.Debugw("got APIDeleteUserURLs response")
 	userID, err := h.service.GetUserID(req)
@@ -222,6 +230,7 @@ func (h *Handler) APIDeleteUserURLs(res http.ResponseWriter, req *http.Request) 
 	logger.Sugaarz.Debugw("sent APIDeleteUserURLs response")
 }
 
+// PingDB handles health check requests to verify database connectivity.
 func (h *Handler) PingDB(res http.ResponseWriter, req *http.Request) {
 	logger.Sugaarz.Debugw("got PingDB request")
 	err := h.service.PingDB(req.Context())

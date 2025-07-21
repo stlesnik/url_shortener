@@ -30,6 +30,7 @@ var (
 	ErrServiceSave = errors.New("save error")
 )
 
+// URLShortenerService provides business logic for URL shortening operations.
 type URLShortenerService struct {
 	repo            IRepository
 	cfg             *config.Config
@@ -38,6 +39,7 @@ type URLShortenerService struct {
 	deleteSemaphore chan struct{}
 }
 
+// New creates a new URLShortenerService with the given repository, config, and daemons channel.
 func New(repo IRepository, cfg *config.Config, daemonsDoneCh chan struct{}) *URLShortenerService {
 	s := &URLShortenerService{
 		repo,
@@ -56,6 +58,7 @@ func (s *URLShortenerService) init() *URLShortenerService {
 	return s
 }
 
+// GenerateShortURL generates a short URL for the given long URL and user ID.
 func (s *URLShortenerService) GenerateShortURL(ctx context.Context, longURL, userID string) (string, bool, error) {
 	urlHash, err := s.CreateShortURLHash(longURL)
 	if err != nil {
@@ -69,6 +72,7 @@ func (s *URLShortenerService) GenerateShortURL(ctx context.Context, longURL, use
 	return shortURL, isDouble, nil
 }
 
+// CreateShortURLHash creates a hash for the given long URL.
 func (s *URLShortenerService) CreateShortURLHash(longURL string) (string, error) {
 	h := fnv.New64a()
 	_, err := h.Write([]byte(longURL))
@@ -78,11 +82,13 @@ func (s *URLShortenerService) CreateShortURLHash(longURL string) (string, error)
 	return base64.URLEncoding.EncodeToString(h.Sum(nil)), nil
 }
 
+// SaveShortURL saves a short URL mapping to the repository.
 func (s *URLShortenerService) SaveShortURL(ctx context.Context, urlHash, longURL string, userID string) (bool, error) {
 	isDouble, err := s.repo.SaveURL(ctx, urlHash, longURL, userID)
 	return isDouble, err
 }
 
+// SaveBatchShortURL saves a batch of URL pairs to the repository.
 func (s *URLShortenerService) SaveBatchShortURL(ctx context.Context, urlPairList []repository.URLPair) error {
 	if rep, ok := s.repo.(IDBRepository); ok {
 		logger.Sugaarz.Debugw("saving batch urls with BatchSaver")
@@ -102,6 +108,7 @@ func (s *URLShortenerService) SaveBatchShortURL(ctx context.Context, urlPairList
 	return nil
 }
 
+// ValidateURL validates the format of a long URL.
 func (s *URLShortenerService) ValidateURL(longURL string) error {
 	_, err := url.ParseRequestURI(longURL)
 	if err != nil {
@@ -110,15 +117,18 @@ func (s *URLShortenerService) ValidateURL(longURL string) error {
 	return nil
 }
 
+// PrepareShortURL prepares the short URL string from a hash.
 func (s *URLShortenerService) PrepareShortURL(urlHash string) string {
 	return fmt.Sprintf("%s/%s", s.cfg.BaseURL, urlHash)
 }
 
+// GetLongURLFromDB retrieves the original URL from the repository by its hash.
 func (s *URLShortenerService) GetLongURLFromDB(ctx context.Context, URLHash string) (models.GetURLDTO, error) {
 	urlDTO, err := s.repo.GetURL(ctx, URLHash)
 	return urlDTO, err
 }
 
+// GetLongURLFromReq extracts the long URL from the HTTP request body.
 func (s *URLShortenerService) GetLongURLFromReq(req *http.Request) (string, error) {
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
@@ -135,6 +145,7 @@ func (s *URLShortenerService) GetLongURLFromReq(req *http.Request) (string, erro
 	return longURLStr, nil
 }
 
+// GetUserID extracts the user ID from the HTTP request context.
 func (s *URLShortenerService) GetUserID(req *http.Request) (string, error) {
 	userIDVal := req.Context().Value(middleware.UserIDKeyName)
 	if userIDVal == nil {
@@ -147,10 +158,12 @@ func (s *URLShortenerService) GetUserID(req *http.Request) (string, error) {
 	return userID, nil
 }
 
+// GetURLHash extracts the short URL hash from the HTTP request.
 func (s *URLShortenerService) GetURLHash(req *http.Request) string {
 	return chi.URLParam(req, "id")
 }
 
+// GetUserURLs retrieves all URLs for a given user.
 func (s *URLShortenerService) GetUserURLs(ctx context.Context, userID string) ([]models.BaseURLResponse, error) {
 	if rep, ok := s.repo.(IDBRepository); ok {
 		logger.Sugaarz.Debugw("getting urls for userID")
@@ -172,6 +185,7 @@ func (s *URLShortenerService) GetUserURLs(ctx context.Context, userID string) ([
 	}
 }
 
+// GenerateDeleteTasks creates delete tasks for the given user and URL hashes.
 func (s *URLShortenerService) GenerateDeleteTasks(userID string, urlHashes []string) {
 	if _, ok := s.repo.(IDBRepository); ok {
 		for _, urlHash := range urlHashes {
@@ -184,6 +198,7 @@ func (s *URLShortenerService) GenerateDeleteTasks(userID string, urlHashes []str
 
 }
 
+// DeleteUrls runs a background process to delete URLs in batches.
 func (s *URLShortenerService) DeleteUrls() {
 	ticker := time.NewTicker(deleteTickerInterval)
 
@@ -233,10 +248,12 @@ loop:
 	}
 }
 
+// PingDB checks the connectivity to the database.
 func (s *URLShortenerService) PingDB(ctx context.Context) error {
 	return s.repo.Ping(ctx)
 }
 
+// PrepareBatch prepares a batch of short URLs and validates them.
 func (s *URLShortenerService) PrepareBatch(apiBatchReq []models.APIRequestPrepareBatchShURL) (
 	apiBatchResp []models.APIResponsePrepareBatchShURL,
 	batch []repository.URLPair,
@@ -262,6 +279,7 @@ func (s *URLShortenerService) PrepareBatch(apiBatchReq []models.APIRequestPrepar
 	return
 }
 
+// SendDeleteTasks sends delete tasks for the given user and URL hashes to the fan in channel.
 func (s *URLShortenerService) SendDeleteTasks(userID string, hashes []string) {
 	s.deleteSemaphore <- struct{}{}
 	defer func() {

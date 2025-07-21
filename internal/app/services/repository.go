@@ -13,6 +13,7 @@ var (
 	_ IRepository   = (*repository.InMemoryRepository)(nil)
 )
 
+// IRepository defines the interface for a basic URL repository.
 type IRepository interface {
 	Ping(ctx context.Context) error
 	SaveURL(ctx context.Context, shortURL string, longURLStr string, userID string) (bool, error)
@@ -20,6 +21,7 @@ type IRepository interface {
 	Close() error
 }
 
+// IDBRepository extends IRepository with db-specific methods.
 type IDBRepository interface {
 	IRepository
 	GetURLList(ctx context.Context, userID string) ([]models.BaseURLDTO, error)
