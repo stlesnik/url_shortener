@@ -11,7 +11,8 @@ import (
 )
 
 func (s *Server) setupRoutes() {
-	service := services.New(s.repo, s.cfg, s.daemonsDoneCh)
+	service := services.New(s.repo, s.cfg)
+	service.InitDeleteDaemon(s.daemonsDoneCh)
 	hs := handlers.New(service)
 	wrap := func(h http.HandlerFunc) http.HandlerFunc {
 		return middleware.WithAuth(s.cfg,

@@ -26,7 +26,7 @@ func TestHandler_SaveURL(t *testing.T) {
 	err := logger.InitLogger(cfg.Environment)
 	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
-	service := services.New(repo, cfg, nil)
+	service := services.New(repo, cfg)
 	handler := New(service)
 
 	type expected struct {
@@ -104,7 +104,7 @@ func TestHandler_SaveURL_Conflict_WithMockRepo(t *testing.T) {
 	cfg := &config.Config{BaseURL: "http://localhost:8000"}
 	err := logger.InitLogger(cfg.Environment)
 	require.NoError(t, err)
-	service := services.New(m, cfg, nil)
+	service := services.New(m, cfg)
 	handler := New(service)
 
 	req1 := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(longURL))
@@ -152,7 +152,7 @@ func TestHandler_GetLongURL(t *testing.T) {
 	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
 	_, _ = repo.SaveURL(context.Background(), "_SGMGLQIsIM=", "http://mbrgaoyhv.yandex", "")
-	service := services.New(repo, cfg, nil)
+	service := services.New(repo, cfg)
 	handler := New(service)
 
 	type expected struct {
@@ -207,7 +207,7 @@ func TestHandler_ApiPrepareShortURL(t *testing.T) {
 	err := logger.InitLogger(cfg.Environment)
 	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
-	service := services.New(repo, cfg, nil)
+	service := services.New(repo, cfg)
 	handler := New(service)
 
 	tests := []struct {
@@ -314,7 +314,7 @@ func TestHandler_APIGetUserURLs(t *testing.T) {
 				tt.expectCall(fr)
 			}
 
-			service := services.New(repo, cfg, nil)
+			service := services.New(repo, cfg)
 			handler := New(service)
 
 			req := httptest.NewRequest(http.MethodGet, "/api/user/urls", nil)
@@ -355,7 +355,7 @@ func TestHandler_PingDB(t *testing.T) {
 	m := mocks.NewMockRepository(ctrl)
 	m.EXPECT().Ping(context.Background()).Return(nil)
 	require.NoError(t, err)
-	service := services.New(m, cfg, nil)
+	service := services.New(m, cfg)
 	handler := New(service)
 
 	t.Run("Mock test db", func(t *testing.T) {

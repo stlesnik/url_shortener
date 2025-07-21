@@ -41,23 +41,24 @@ type URLShortenerService struct {
 	deleteSemaphore chan struct{}
 }
 
-// New creates a new URLShortenerService with the given repository, config, and daemons channel.
-func New(repo IRepository, cfg *config.Config, daemonsDoneCh chan struct{}) *URLShortenerService {
-	s := &URLShortenerService{
-		repo,
-		cfg,
-		make(chan models.DeleteTask, bufferSize),
-		daemonsDoneCh,
-		make(chan struct{}, 5),
+// New creates a new URLShortenerService with the given repository and config.
+func New(repo IRepository, cfg *config.Config) *URLShortenerService {
+	return &URLShortenerService{
+		repo: repo,
+		cfg:  cfg,
 	}
-	return s.init()
 }
-func (s *URLShortenerService) init() *URLShortenerService {
+
+// InitDeleteDaemon initializes the delete goroutine.
+func (s *URLShortenerService) InitDeleteDaemon(daemonsDoneCh chan struct{}) {
+	s.deleteCh = make(chan models.DeleteTask, bufferSize)
+	s.daemonsDoneCh = daemonsDoneCh
+	s.deleteSemaphore = make(chan struct{}, 5)
+
 	if _, ok := s.repo.(IDBRepository); ok {
 		logger.Sugaarz.Debugw("starting DeleteUrls goroutine")
 		go s.DeleteUrls()
 	}
-	return s
 }
 
 // GenerateShortURL generates a short URL for the given long URL and user ID.

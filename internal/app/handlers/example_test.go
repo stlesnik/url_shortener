@@ -43,7 +43,7 @@ func (m *mockRepo) DeleteURLList(values []interface{}, _ []string) (int64, error
 func ExampleHandler_SaveURL() {
 	repo := &mockRepo{}
 	cfg := &config.Config{BaseURL: "http://localhost:8080"}
-	h := &Handler{service: services.New(repo, cfg, make(chan struct{}))}
+	h := &Handler{service: services.New(repo, cfg)}
 	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewBufferString("http://example.com"))
 	ctx := context.WithValue(req.Context(), middleware.UserIDKeyName, "test")
 	req = req.WithContext(ctx)
@@ -67,7 +67,7 @@ func ExampleHandler_SaveURL() {
 func ExampleHandler_GetLongURL() {
 	repo := &mockRepo{}
 	cfg := &config.Config{BaseURL: "http://localhost:8080"}
-	h := &Handler{service: services.New(repo, cfg, make(chan struct{}))}
+	h := &Handler{service: services.New(repo, cfg)}
 	req := httptest.NewRequest(http.MethodGet, "/9uOVtk2tmuQ=", nil)
 	w := httptest.NewRecorder()
 
@@ -88,7 +88,7 @@ func ExampleHandler_GetLongURL() {
 func ExampleHandler_APIPrepareShortURL() {
 	repo := &mockRepo{}
 	cfg := &config.Config{BaseURL: "http://localhost:8080"}
-	h := &Handler{service: services.New(repo, cfg, make(chan struct{}))}
+	h := &Handler{service: services.New(repo, cfg)}
 	apiReq := models.APIRequestPrepareShURL{LongURL: "http://example.com"}
 	body, _ := json.Marshal(apiReq)
 	req := httptest.NewRequest(http.MethodPost, "/api/shorten", bytes.NewBuffer(body))
@@ -112,7 +112,7 @@ func ExampleHandler_APIPrepareShortURL() {
 func ExampleHandler_APIPrepareBatchShortURL() {
 	repo := &mockRepo{}
 	cfg := &config.Config{BaseURL: "http://localhost:8080"}
-	h := &Handler{service: services.New(repo, cfg, make(chan struct{}))}
+	h := &Handler{service: services.New(repo, cfg)}
 	batchReq := []models.APIRequestPrepareBatchShURL{{CorrelationID: "1", LongURL: "http://example.com"}}
 	body, _ := json.Marshal(batchReq)
 	req := httptest.NewRequest(http.MethodPost, "/api/shorten/batch", bytes.NewBuffer(body))
@@ -136,7 +136,7 @@ func ExampleHandler_APIPrepareBatchShortURL() {
 func ExampleHandler_APIGetUserURLs() {
 	repo := &mockRepo{}
 	cfg := &config.Config{BaseURL: "http://localhost:8080"}
-	h := &Handler{service: services.New(repo, cfg, make(chan struct{}))}
+	h := &Handler{service: services.New(repo, cfg)}
 	req := httptest.NewRequest(http.MethodGet, "/api/user/urls", nil)
 	ctx := context.WithValue(req.Context(), middleware.UserIDKeyName, "test")
 	req = req.WithContext(ctx)
@@ -160,7 +160,7 @@ func ExampleHandler_APIGetUserURLs() {
 func ExampleHandler_APIDeleteUserURLs() {
 	repo := &mockRepo{}
 	cfg := &config.Config{BaseURL: "http://localhost:8080"}
-	h := &Handler{service: services.New(repo, cfg, make(chan struct{}))}
+	h := &Handler{service: services.New(repo, cfg)}
 	urlHashes := []string{"9uOVtk2tmuQ="}
 	body, _ := json.Marshal(urlHashes)
 	req := httptest.NewRequest(http.MethodDelete, "/api/user/urls", bytes.NewBuffer(body))

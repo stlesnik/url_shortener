@@ -28,7 +28,7 @@ func (m *BenchmarkMockRepository) GetURL(_ context.Context, shortURL string) (mo
 func (m *BenchmarkMockRepository) Close() error { return nil }
 
 func BenchmarkCreateShortURLHash(b *testing.B) {
-	service := New(nil, &config.Config{}, nil)
+	service := New(nil, &config.Config{})
 	url := "https://example.com/benchmark"
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -38,7 +38,7 @@ func BenchmarkCreateShortURLHash(b *testing.B) {
 
 func BenchmarkSaveShortURL(b *testing.B) {
 	repo := &BenchmarkMockRepository{storage: make(map[string]string)}
-	service := New(repo, &config.Config{}, nil)
+	service := New(repo, &config.Config{})
 	url := "https://example.com/benchmark"
 	hash, _ := service.CreateShortURLHash(url)
 	b.ResetTimer()
@@ -50,7 +50,7 @@ func BenchmarkSaveShortURL(b *testing.B) {
 func BenchmarkGenerateShortURL(b *testing.B) {
 	repo := &BenchmarkMockRepository{storage: make(map[string]string)}
 	cfg := &config.Config{BaseURL: "http://localhost:8080"}
-	service := New(repo, cfg, nil)
+	service := New(repo, cfg)
 	url := "https://example.com/benchmark"
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -60,7 +60,7 @@ func BenchmarkGenerateShortURL(b *testing.B) {
 
 func BenchmarkPrepareShortURL(b *testing.B) {
 	cfg := &config.Config{BaseURL: "http://localhost:8080"}
-	service := New(nil, cfg, nil)
+	service := New(nil, cfg)
 	hash := "benchhash"
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
