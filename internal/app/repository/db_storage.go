@@ -10,12 +10,17 @@ import (
 	"github.com/stlesnik/url_shortener/internal/app/models"
 	"github.com/stlesnik/url_shortener/internal/logger"
 	"strings"
+	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 const (
 	ErrCodeUniqueViolation = "23505" // unique_violation
+	MaxOpenConns           = 25
+	MaxIdleConns           = 10
+	MaxIdleTime            = 5 * time.Minute
+	MaxConnLifetime        = time.Hour
 )
 
 type DataBase struct {
@@ -28,6 +33,12 @@ func NewDataBase(dsn string) (*DataBase, error) {
 		logger.Sugaarz.Errorf("error while opening db: %w: %v", ErrOpenDB, err)
 		return nil, fmt.Errorf("error while opening db: %w: %v", ErrOpenDB, err)
 	}
+
+	db.SetMaxOpenConns(MaxOpenConns)
+	db.SetMaxIdleConns(MaxIdleConns)
+	db.SetConnMaxIdleTime(MaxIdleTime)
+	db.SetConnMaxLifetime(MaxConnLifetime)
+
 	return &DataBase{db: db}, nil
 }
 
@@ -58,7 +69,7 @@ type URLPair struct {
 }
 
 func (d *DataBase) SaveBatchURL(ctx context.Context, batch []URLPair) error {
-	tx, err := d.db.Begin()
+	tx, err := d.db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("error while beginning transaction: %w: %v", ErrBeginTransaction, err)
 	}
@@ -105,10 +116,10 @@ func (d *DataBase) GetURLList(ctx context.Context, userID string) ([]models.Base
 
 func (d *DataBase) DeleteURLList(values []interface{}, placeholders []string) (int64, error) {
 	query := fmt.Sprintf(`
-		UPDATE url 
-		SET is_deleted = TRUE 
-		WHERE (user_id,short_url) in (%s)
-	`, strings.Join(placeholders, ", "))
+       UPDATE url 
+       SET is_deleted = TRUE 
+       WHERE (user_id,short_url) in (%s)
+    `, strings.Join(placeholders, ", "))
 
 	result, err := d.db.Exec(query, values...)
 	if err != nil {

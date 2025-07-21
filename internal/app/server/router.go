@@ -1,10 +1,12 @@
 package server
 
 import (
+	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/stlesnik/url_shortener/internal/app/handlers"
 	"github.com/stlesnik/url_shortener/internal/app/middleware"
 	"github.com/stlesnik/url_shortener/internal/app/services"
 	"net/http"
+	_ "net/http/pprof"
 )
 
 func (s *Server) setupRoutes() {
@@ -27,4 +29,5 @@ func (s *Server) setupRoutes() {
 	s.router.Get("/api/user/urls", wrap(hs.APIGetUserURLs))
 	s.router.Delete("/api/user/urls", wrap(hs.APIDeleteUserURLs))
 
+	s.router.Mount("/debug", chiMiddleware.Profiler())
 }
