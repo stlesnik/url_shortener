@@ -44,12 +44,18 @@ func NewDataBase(dsn string) (*DataBase, error) {
 		return nil, fmt.Errorf("error while opening db: %w: %v", ErrOpenDB, err)
 	}
 
-	db.SetMaxOpenConns(MaxOpenConns)
-	db.SetMaxIdleConns(MaxIdleConns)
-	db.SetConnMaxIdleTime(MaxIdleTime)
-	db.SetConnMaxLifetime(MaxConnLifetime)
+	database := &DataBase{db: db}
+	database.configureConnectionPool()
 
-	return &DataBase{db: db}, nil
+	return database, nil
+}
+
+// configureConnectionPool configures the database connection pool settings.
+func (d *DataBase) configureConnectionPool() {
+	d.db.SetMaxOpenConns(MaxOpenConns)
+	d.db.SetMaxIdleConns(MaxIdleConns)
+	d.db.SetConnMaxIdleTime(MaxIdleTime)
+	d.db.SetConnMaxLifetime(MaxConnLifetime)
 }
 
 // Ping checks the database connection.
