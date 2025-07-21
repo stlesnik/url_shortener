@@ -12,8 +12,8 @@ import (
 // db
 
 // NewRepository инициализирует и возвращает подходящий репозиторий в зависимости от конфигурации.
-func NewRepository(cfg *config.Config) (IRepository, error) {
-	var repo IRepository
+func NewRepository(cfg *config.Config) (Storager, error) {
+	var repo Storager
 
 	switch {
 	case cfg.DatabaseDSN != "":

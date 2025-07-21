@@ -259,7 +259,7 @@ func TestHandler_APIGetUserURLs(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		setupRepo    func() services.IRepository
+		setupRepo    func() services.Storager
 		setupContext func(*http.Request) *http.Request
 		expectCall   func(*FullRepo)
 		expectedCode int
@@ -267,7 +267,7 @@ func TestHandler_APIGetUserURLs(t *testing.T) {
 	}{
 		{
 			name: "Репо поддерживает URLList - успех",
-			setupRepo: func() services.IRepository {
+			setupRepo: func() services.Storager {
 				fr := &FullRepo{
 					mocks.NewMockDBRepository(ctrl),
 				}
@@ -288,7 +288,7 @@ func TestHandler_APIGetUserURLs(t *testing.T) {
 		},
 		{
 			name: "Нет записей - StatusNoContent",
-			setupRepo: func() services.IRepository {
+			setupRepo: func() services.Storager {
 				fr := &FullRepo{
 					mocks.NewMockDBRepository(ctrl),
 				}

@@ -16,7 +16,7 @@ import (
 	"github.com/stlesnik/url_shortener/internal/config"
 )
 
-// mockRepo is a minimal mock implementation of services.IRepository and services.IDBRepository for examples.
+// mockRepo is a minimal mock implementation of services.Storager and services.DBStorager for examples.
 type mockRepo struct{}
 
 func (m *mockRepo) Ping(_ context.Context) error { return nil }

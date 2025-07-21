@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -11,13 +12,16 @@ import (
 // Server represents the HTTP server for the URL shortener service.
 type Server struct {
 	router        chi.Router
-	repo          services.IRepository
+	repo          services.Storager
 	cfg           *config.Config
 	daemonsDoneCh chan struct{}
 }
 
 // New creates a new Server instance with the given repository, config, and daemons channel.
-func New(repo services.IRepository, cfg *config.Config, daemonsDoneCh chan struct{}) *Server {
+func New(repo services.Storager, cfg *config.Config, daemonsDoneCh chan struct{}) (*Server, error) {
+	if repo == nil || cfg == nil || daemonsDoneCh == nil {
+		return nil, errors.New("repository, config, or daemons channel is nil")
+	}
 	s := &Server{
 		router:        chi.NewRouter(),
 		repo:          repo,
@@ -25,7 +29,7 @@ func New(repo services.IRepository, cfg *config.Config, daemonsDoneCh chan struc
 		daemonsDoneCh: daemonsDoneCh,
 	}
 	s.setupRoutes()
-	return s
+	return s, nil
 }
 
 // Start runs the HTTP server.

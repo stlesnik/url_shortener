@@ -41,7 +41,11 @@ func main() {
 		}
 	}()
 
-	srv := server.New(repo, cfg, daemonsDoneCh)
+	srv, err := server.New(repo, cfg, daemonsDoneCh)
+	if err != nil {
+		logger.Sugaarz.Errorw("failed to create server", "error", err)
+		return
+	}
 
 	log.Printf("Сервер запущен на %s", cfg.ServerAddress)
 	err = srv.Start()

@@ -60,7 +60,7 @@ func TestServices_CreateSavePrepareShortURL(t *testing.T) {
 			wantError: false,
 		},
 		{
-			name:        "IRepository failure",
+			name:        "Storager failure",
 			longURL:     "https://google.com",
 			wantError:   true,
 			repoFailure: true,
@@ -116,7 +116,7 @@ func TestServices_SaveShortURL(t *testing.T) {
 		wantError   bool
 	}{
 		{"Successful save", false, false},
-		{"IRepository failure", true, true},
+		{"Storager failure", true, true},
 	}
 
 	cfg := &config.Config{}
@@ -152,7 +152,7 @@ func TestServices_SaveBatchShortURL(t *testing.T) {
 	}{
 		{"Successful save", false, false},
 		{"Successful save to db", false, false},
-		{"IRepository failure", true, true},
+		{"Storager failure", true, true},
 	}
 
 	cfg := &config.Config{}
