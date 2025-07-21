@@ -2,6 +2,12 @@ package handlers
 
 import (
 	"context"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"
 	"github.com/stlesnik/url_shortener/internal/app/middleware"
@@ -13,11 +19,6 @@ import (
 	"github.com/stlesnik/url_shortener/internal/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"io"
-	"net/http"
-	"net/http/httptest"
-	"strings"
-	"testing"
 )
 
 func TestHandler_SaveURL(t *testing.T) {
@@ -258,7 +259,7 @@ func TestHandler_APIGetUserURLs(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		setupRepo    func() services.Repository
+		setupRepo    func() services.IRepository
 		setupContext func(*http.Request) *http.Request
 		expectCall   func(*FullRepo)
 		expectedCode int
@@ -266,7 +267,7 @@ func TestHandler_APIGetUserURLs(t *testing.T) {
 	}{
 		{
 			name: "Репо поддерживает URLList - успех",
-			setupRepo: func() services.Repository {
+			setupRepo: func() services.IRepository {
 				fr := &FullRepo{
 					mocks.NewMockDBRepository(ctrl),
 				}
@@ -287,7 +288,7 @@ func TestHandler_APIGetUserURLs(t *testing.T) {
 		},
 		{
 			name: "Нет записей - StatusNoContent",
-			setupRepo: func() services.Repository {
+			setupRepo: func() services.IRepository {
 				fr := &FullRepo{
 					mocks.NewMockDBRepository(ctrl),
 				}

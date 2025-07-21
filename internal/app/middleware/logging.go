@@ -1,9 +1,10 @@
 package middleware
 
 import (
-	"github.com/stlesnik/url_shortener/internal/logger"
 	"net/http"
 	"time"
+
+	"github.com/stlesnik/url_shortener/internal/logger"
 )
 
 type (

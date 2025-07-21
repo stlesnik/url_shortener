@@ -2,9 +2,10 @@ package middleware
 
 import (
 	"compress/gzip"
-	"github.com/stlesnik/url_shortener/internal/logger"
 	"net/http"
 	"strings"
+
+	"github.com/stlesnik/url_shortener/internal/logger"
 )
 
 func WithDecompress(next http.HandlerFunc) http.HandlerFunc {

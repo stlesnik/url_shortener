@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+
 	"github.com/stlesnik/url_shortener/internal/app/repository"
 	"github.com/stlesnik/url_shortener/internal/config"
 	"github.com/stlesnik/url_shortener/internal/migrator"
@@ -10,8 +11,8 @@ import (
 
 // db
 
-func NewRepository(cfg *config.Config) (Repository, error) {
-	var repo Repository
+func NewRepository(cfg *config.Config) (IRepository, error) {
+	var repo IRepository
 
 	switch {
 	case cfg.DatabaseDSN != "":

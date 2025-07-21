@@ -1,8 +1,9 @@
 package handlers
 
 import (
-	"github.com/stlesnik/url_shortener/internal/logger"
 	"net/http"
+
+	"github.com/stlesnik/url_shortener/internal/logger"
 )
 
 func WriteError(w http.ResponseWriter, msg string, code int, trace bool) {

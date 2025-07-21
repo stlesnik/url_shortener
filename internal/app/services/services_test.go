@@ -2,14 +2,15 @@ package services
 
 import (
 	"context"
-	"github.com/stlesnik/url_shortener/internal/app/models"
-	"github.com/stlesnik/url_shortener/internal/app/repository"
-	"github.com/stlesnik/url_shortener/internal/config"
-	"github.com/stlesnik/url_shortener/internal/logger"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/stlesnik/url_shortener/internal/app/models"
+	"github.com/stlesnik/url_shortener/internal/app/repository"
+	"github.com/stlesnik/url_shortener/internal/config"
+	"github.com/stlesnik/url_shortener/internal/logger"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -59,7 +60,7 @@ func TestServices_CreateSavePrepareShortURL(t *testing.T) {
 			wantError: false,
 		},
 		{
-			name:        "Repository failure",
+			name:        "IRepository failure",
 			longURL:     "https://google.com",
 			wantError:   true,
 			repoFailure: true,
@@ -115,7 +116,7 @@ func TestServices_SaveShortURL(t *testing.T) {
 		wantError   bool
 	}{
 		{"Successful save", false, false},
-		{"Repository failure", true, true},
+		{"IRepository failure", true, true},
 	}
 
 	cfg := &config.Config{}
@@ -151,7 +152,7 @@ func TestServices_SaveBatchShortURL(t *testing.T) {
 	}{
 		{"Successful save", false, false},
 		{"Successful save to db", false, false},
-		{"Repository failure", true, true},
+		{"IRepository failure", true, true},
 	}
 
 	cfg := &config.Config{}

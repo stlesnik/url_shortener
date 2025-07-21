@@ -1,12 +1,13 @@
 package server
 
 import (
+	"net/http"
+	_ "net/http/pprof"
+
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/stlesnik/url_shortener/internal/app/handlers"
 	"github.com/stlesnik/url_shortener/internal/app/middleware"
 	"github.com/stlesnik/url_shortener/internal/app/services"
-	"net/http"
-	_ "net/http/pprof"
 )
 
 func (s *Server) setupRoutes() {

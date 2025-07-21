@@ -3,8 +3,9 @@ package repository
 import (
 	"context"
 	"fmt"
-	"github.com/stlesnik/url_shortener/internal/app/models"
 	"sync"
+
+	"github.com/stlesnik/url_shortener/internal/app/models"
 )
 
 type InMemoryRepository struct {
