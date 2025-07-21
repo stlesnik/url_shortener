@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/stlesnik/url_shortener/internal/app/models"
 	"github.com/stlesnik/url_shortener/internal/app/repository"
 	"github.com/stlesnik/url_shortener/internal/config"
@@ -65,5 +67,20 @@ func BenchmarkPrepareShortURL(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_ = service.PrepareShortURL(hash)
+	}
+}
+
+func BenchmarkGetLongURLFromDB(b *testing.B) {
+	repo := &BenchmarkMockRepository{storage: make(map[string]string)}
+	service := New(repo, &config.Config{})
+	url := "https://example.com/benchmark"
+	hash, _ := service.CreateShortURLHash(url)
+	_, err := repo.SaveURL(context.Background(), hash, url, "")
+	if err != nil {
+		require.NoError(b, err)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = service.GetLongURLFromDB(context.Background(), hash)
 	}
 }
