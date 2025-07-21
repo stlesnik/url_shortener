@@ -16,13 +16,20 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-const (
-	ErrCodeUniqueViolation = "23505" // unique_violation
-	MaxOpenConns           = 25
-	MaxIdleConns           = 10
-	MaxIdleTime            = 5 * time.Minute
-	MaxConnLifetime        = time.Hour
-)
+// ErrCodeUniqueViolation is the PostgreSQL error code for unique constraint violation.
+const ErrCodeUniqueViolation = "23505"
+
+// MaxOpenConns is the maximum number of open database connections.
+const MaxOpenConns = 25
+
+// MaxIdleConns is the maximum number of idle database connections.
+const MaxIdleConns = 10
+
+// MaxIdleTime is the maximum amount of time a connection may be idle.
+const MaxIdleTime = 5 * time.Minute
+
+// MaxConnLifetime is the maximum amount of time a connection may be reused.
+const MaxConnLifetime = time.Hour
 
 // DataBase represents a PostgreSQL database connection.
 type DataBase struct {
