@@ -20,15 +20,17 @@ import (
 	"github.com/stlesnik/url_shortener/internal/logger"
 )
 
-const (
-	bufferSize           = 10
-	deleteTickerInterval = 100 * time.Millisecond
-	DeleteBatchSize      = 100
-)
+// bufferSize is the size of the delete task channel buffer.
+const bufferSize = 10
 
-var (
-	ErrServiceSave = errors.New("save error")
-)
+// deleteTickerInterval is the interval for the delete ticker.
+const deleteTickerInterval = 100 * time.Millisecond
+
+// DeleteBatchSize is the batch size for deleting URLs.
+const DeleteBatchSize = 100
+
+// ErrServiceSave is returned when there is a service save error.
+var ErrServiceSave = errors.New("save error")
 
 // URLShortenerService provides business logic for URL shortening operations.
 type URLShortenerService struct {

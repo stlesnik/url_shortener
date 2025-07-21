@@ -8,6 +8,7 @@ import (
 	"github.com/stlesnik/url_shortener/internal/config"
 )
 
+// Server represents the HTTP server for the URL shortener service.
 type Server struct {
 	router        chi.Router
 	repo          services.IRepository
@@ -15,6 +16,7 @@ type Server struct {
 	daemonsDoneCh chan struct{}
 }
 
+// New creates a new Server instance with the given repository, config, and daemons channel.
 func New(repo services.IRepository, cfg *config.Config, daemonsDoneCh chan struct{}) *Server {
 	s := &Server{
 		router:        chi.NewRouter(),
@@ -26,6 +28,7 @@ func New(repo services.IRepository, cfg *config.Config, daemonsDoneCh chan struc
 	return s
 }
 
+// Start runs the HTTP server.
 func (s *Server) Start() error {
 	return http.ListenAndServe(s.cfg.ServerAddress, s.router)
 }

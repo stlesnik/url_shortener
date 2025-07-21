@@ -11,6 +11,7 @@ import (
 
 // db
 
+// NewRepository инициализирует и возвращает подходящий репозиторий в зависимости от конфигурации.
 func NewRepository(cfg *config.Config) (IRepository, error) {
 	var repo IRepository
 
