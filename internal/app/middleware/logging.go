@@ -7,7 +7,7 @@ import (
 	"github.com/stlesnik/url_shortener/internal/logger"
 )
 
-// loggingResponseWriter wraps http.ResponseWriter to capture status and size for logging.
+// loggingResponseWriter wraps http.ResponseWriter for logging.
 type loggingResponseWriter struct {
 	http.ResponseWriter
 	status int

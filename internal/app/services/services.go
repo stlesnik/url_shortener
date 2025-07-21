@@ -32,7 +32,7 @@ const DeleteBatchSize = 100
 // ErrServiceSave is returned when there is a service save error.
 var ErrServiceSave = errors.New("save error")
 
-// URLShortenerService provides business logic for URL shortening operations.
+// URLShortenerService provides URL shortening logic.
 type URLShortenerService struct {
 	repo            Storager
 	cfg             *config.Config

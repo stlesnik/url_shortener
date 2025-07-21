@@ -6,7 +6,7 @@ import (
 	"github.com/caarlos0/env/v6"
 )
 
-// Config holds the configuration for the application.
+// Config holds application configuration.
 type Config struct {
 	ServerAddress   string `env:"SERVER_ADDRESS"`
 	BaseURL         string `env:"BASE_URL"`

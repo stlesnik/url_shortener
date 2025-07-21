@@ -31,7 +31,7 @@ func WithDecompress(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// gzipResponseWriter wraps http.ResponseWriter to provide gzip compression.
+// gzipResponseWriter wraps http.ResponseWriter for gzip.
 type gzipResponseWriter struct {
 	http.ResponseWriter
 	writer      *gzip.Writer

@@ -13,7 +13,7 @@ var (
 	_ Storager   = (*repository.InMemoryRepository)(nil)
 )
 
-// Storager defines the interface for a basic URL repository.
+// Storager is a URL repository interface.
 type Storager interface {
 	Ping(ctx context.Context) error
 	SaveURL(ctx context.Context, shortURL string, longURLStr string, userID string) (bool, error)
@@ -21,7 +21,7 @@ type Storager interface {
 	Close() error
 }
 
-// DBStorager extends Storager with db-specific methods.
+// DBStorager is a DB-specific URL repository interface.
 type DBStorager interface {
 	Storager
 	GetURLList(ctx context.Context, userID string) ([]models.BaseURLDTO, error)

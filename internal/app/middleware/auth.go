@@ -17,10 +17,10 @@ import (
 // contextKey is a type for context keys used in middleware.
 type contextKey string
 
-// TokenExp is the expiration duration for JWT tokens.
+// TokenExp is JWT expiration.
 const TokenExp = time.Hour * 24
 
-// UserIDKeyName is the context key for storing user ID.
+// UserIDKeyName is the user ID context key.
 const UserIDKeyName contextKey = "userID"
 
 // WithAuth is a middleware that checks for user authentication and sets user ID in context.
@@ -49,7 +49,7 @@ func WithAuth(cfg *config.Config, next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// Claims represents JWT claims with user ID.
+// Claims is JWT claims with user ID.
 type Claims struct {
 	jwt.RegisteredClaims
 	UserID string

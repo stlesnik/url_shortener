@@ -6,7 +6,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Sugaarz is the global sugared logger variable used throughout the application.
+// Sugaarz is the global logger.
 var Sugaarz *zap.SugaredLogger
 
 // InitLogger initializes the global logger variable based on the environment.

@@ -81,7 +81,7 @@ func (d *DataBase) SaveURL(ctx context.Context, short string, long string, userI
 	return false, nil
 }
 
-// URLPair represents a pair of short and long URLs.
+// URLPair represents a short and long URL pair.
 type URLPair struct {
 	URLHash string
 	LongURL string

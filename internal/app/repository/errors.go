@@ -2,26 +2,26 @@ package repository
 
 import "errors"
 
-// ErrURLNotFound is returned when a URL is not found in the repository.
+// ErrURLNotFound means URL not found.
 var ErrURLNotFound = errors.New("url not found")
 
-// ErrOpenDB is returned when there is an error opening the database.
+// ErrOpenDB means error opening DB.
 var ErrOpenDB = errors.New("error while opening db")
 
-// ErrWarmDB is returned when there is an error warming up the database.
+// ErrWarmDB means error warming DB.
 var ErrWarmDB = errors.New("error while warming db up")
 
-// ErrPingDB is returned when there is an error pinging the database.
+// ErrPingDB means error pinging DB.
 var ErrPingDB = errors.New("error while ping to db")
 
-// ErrSaveURL is returned when there is an error saving a URL.
+// ErrSaveURL means error saving URL.
 var ErrSaveURL = errors.New("error while saving url")
 
-// ErrGetURL is returned when there is an error getting a URL.
+// ErrGetURL means error getting URL.
 var ErrGetURL = errors.New("error while getting url")
 
-// ErrGetURLList is returned when there is an error getting a URL list.
+// ErrGetURLList means error getting URL list.
 var ErrGetURLList = errors.New("error while getting url list")
 
-// ErrBeginTransaction is returned when there is an error beginning a transaction.
+// ErrBeginTransaction means error beginning transaction.
 var ErrBeginTransaction = errors.New("error while beginning transaction")
