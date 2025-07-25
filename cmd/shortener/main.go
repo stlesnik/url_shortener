@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/stlesnik/url_shortener/internal/app/server"
 	"github.com/stlesnik/url_shortener/internal/app/services"
 	"github.com/stlesnik/url_shortener/internal/config"
 	"github.com/stlesnik/url_shortener/internal/logger"
-	"log"
 )
 
 func main() {
@@ -40,7 +41,11 @@ func main() {
 		}
 	}()
 
-	srv := server.New(repo, cfg, daemonsDoneCh)
+	srv, err := server.New(repo, cfg, daemonsDoneCh)
+	if err != nil {
+		logger.Sugaarz.Errorw("failed to create server", "error", err)
+		return
+	}
 
 	log.Printf("Сервер запущен на %s", cfg.ServerAddress)
 	err = srv.Start()

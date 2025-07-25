@@ -1,10 +1,12 @@
 package handlers
 
 import (
-	"github.com/stlesnik/url_shortener/internal/logger"
 	"net/http"
+
+	"github.com/stlesnik/url_shortener/internal/logger"
 )
 
+// WriteError writes an error message to the response with the given status code and prints a log about it.
 func WriteError(w http.ResponseWriter, msg string, code int, trace bool) {
 	if trace {
 		logger.Sugaarz.Errorw(msg, "code", code)

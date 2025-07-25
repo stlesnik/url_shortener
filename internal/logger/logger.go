@@ -1,12 +1,15 @@
 package logger
 
 import (
-	"go.uber.org/zap"
 	"strings"
+
+	"go.uber.org/zap"
 )
 
+// Sugaarz is the global logger.
 var Sugaarz *zap.SugaredLogger
 
+// InitLogger initializes the global logger variable based on the environment.
 func InitLogger(env string) error {
 	var logger *zap.Logger
 	var err error

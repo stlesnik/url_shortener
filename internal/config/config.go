@@ -2,9 +2,11 @@ package config
 
 import (
 	"flag"
+
 	"github.com/caarlos0/env/v6"
 )
 
+// Config holds application configuration.
 type Config struct {
 	ServerAddress   string `env:"SERVER_ADDRESS"`
 	BaseURL         string `env:"BASE_URL"`
@@ -14,6 +16,7 @@ type Config struct {
 	AuthSecretKey   string `env:"AUTH_SECRET_KEY"`
 }
 
+// New creates a new Config by parsing flags and environment variables.
 func New() (*Config, error) {
 	cfg := &Config{}
 

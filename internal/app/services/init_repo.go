@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+
 	"github.com/stlesnik/url_shortener/internal/app/repository"
 	"github.com/stlesnik/url_shortener/internal/config"
 	"github.com/stlesnik/url_shortener/internal/migrator"
@@ -10,8 +11,9 @@ import (
 
 // db
 
-func NewRepository(cfg *config.Config) (Repository, error) {
-	var repo Repository
+// NewRepository инициализирует и возвращает подходящий репозиторий в зависимости от конфигурации.
+func NewRepository(cfg *config.Config) (Storager, error) {
+	var repo Storager
 
 	switch {
 	case cfg.DatabaseDSN != "":

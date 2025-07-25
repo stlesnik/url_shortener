@@ -5,19 +5,22 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"sync"
+
 	"github.com/google/uuid"
 	"github.com/stlesnik/url_shortener/internal/app/models"
 	"github.com/stlesnik/url_shortener/internal/logger"
-	"os"
-	"sync"
 )
 
+// FileStorage implements a file-based URL repository.
 type FileStorage struct {
 	file *os.File
 	data map[string]string
 	mu   sync.RWMutex
 }
 
+// NewFileStorage creates a new FileStorage instance with the given file path.
 func NewFileStorage(path string) (*FileStorage, error) {
 	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
@@ -40,6 +43,7 @@ func NewFileStorage(path string) (*FileStorage, error) {
 	return fs, nil
 }
 
+// Ping checks the file storage for readiness.
 func (f *FileStorage) Ping(_ context.Context) error {
 	if f.data != nil {
 		return nil
@@ -47,6 +51,7 @@ func (f *FileStorage) Ping(_ context.Context) error {
 	return fmt.Errorf("file repository is empty")
 }
 
+// SaveURL saves a URL mapping to the file storage.
 func (f *FileStorage) SaveURL(ctx context.Context, short string, long string, _ string) (isDouble bool, err error) {
 	select {
 	case <-ctx.Done():
@@ -75,6 +80,7 @@ func (f *FileStorage) SaveURL(ctx context.Context, short string, long string, _ 
 	return false, err
 }
 
+// GetURL retrieves a URL mapping from the file storage by short URL.
 func (f *FileStorage) GetURL(_ context.Context, short string) (models.GetURLDTO, error) {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
@@ -86,16 +92,19 @@ func (f *FileStorage) GetURL(_ context.Context, short string) (models.GetURLDTO,
 	return models.GetURLDTO{OriginalURL: val, IsDeleted: false}, nil
 }
 
+// Close closes the file storage.
 func (f *FileStorage) Close() error {
 	return f.file.Close()
 }
 
+// storedRecord represents a record stored in the file storage.
 type storedRecord struct {
 	UUID        string `json:"uuid"`
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
 }
 
+// newStoredRecord creates a new storedRecord instance.
 func newStoredRecord(shortURL, originalURL string) storedRecord {
 	return storedRecord{
 		UUID:        uuid.New().String(),

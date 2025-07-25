@@ -5,32 +5,60 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jmoiron/sqlx"
 	"github.com/stlesnik/url_shortener/internal/app/models"
 	"github.com/stlesnik/url_shortener/internal/logger"
-	"strings"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-const (
-	ErrCodeUniqueViolation = "23505" // unique_violation
-)
+// ErrCodeUniqueViolation is the PostgreSQL error code for unique constraint violation.
+const ErrCodeUniqueViolation = "23505"
 
+// MaxOpenConns is the maximum number of open database connections.
+const MaxOpenConns = 25
+
+// MaxIdleConns is the maximum number of idle database connections.
+const MaxIdleConns = 10
+
+// MaxIdleTime is the maximum amount of time a connection may be idle.
+const MaxIdleTime = 5 * time.Minute
+
+// MaxConnLifetime is the maximum amount of time a connection may be reused.
+const MaxConnLifetime = time.Hour
+
+// DataBase represents a PostgreSQL database connection.
 type DataBase struct {
 	db *sqlx.DB
 }
 
+// NewDataBase creates a new DataBase instance with the given DSN.
 func NewDataBase(dsn string) (*DataBase, error) {
 	db, err := sqlx.Open("pgx", dsn)
 	if err != nil {
 		logger.Sugaarz.Errorf("error while opening db: %w: %v", ErrOpenDB, err)
 		return nil, fmt.Errorf("error while opening db: %w: %v", ErrOpenDB, err)
 	}
-	return &DataBase{db: db}, nil
+
+	database := &DataBase{db: db}
+	database.configureConnectionPool()
+
+	return database, nil
 }
 
+// configureConnectionPool configures the database connection pool settings.
+func (d *DataBase) configureConnectionPool() {
+	d.db.SetMaxOpenConns(MaxOpenConns)
+	d.db.SetMaxIdleConns(MaxIdleConns)
+	d.db.SetConnMaxIdleTime(MaxIdleTime)
+	d.db.SetConnMaxLifetime(MaxConnLifetime)
+}
+
+// Ping checks the database connection.
 func (d *DataBase) Ping(ctx context.Context) error {
 	if err := d.db.PingContext(ctx); err != nil {
 		return fmt.Errorf("error while ping to db: %w: %v", ErrPingDB, err)
@@ -38,6 +66,7 @@ func (d *DataBase) Ping(ctx context.Context) error {
 	return nil
 }
 
+// SaveURL saves a URL mapping to the database.
 func (d *DataBase) SaveURL(ctx context.Context, short string, long string, userID string) (bool, error) {
 	_, dbErr := d.db.ExecContext(ctx, "INSERT INTO url (short_url, original_url, user_id) VALUES ($1, $2, $3)", short, long, userID)
 	if dbErr != nil {
@@ -52,13 +81,15 @@ func (d *DataBase) SaveURL(ctx context.Context, short string, long string, userI
 	return false, nil
 }
 
+// URLPair represents a short and long URL pair.
 type URLPair struct {
 	URLHash string
 	LongURL string
 }
 
+// SaveBatchURL saves a batch of URL pairs to the database.
 func (d *DataBase) SaveBatchURL(ctx context.Context, batch []URLPair) error {
-	tx, err := d.db.Begin()
+	tx, err := d.db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("error while beginning transaction: %w: %v", ErrBeginTransaction, err)
 	}
@@ -77,6 +108,7 @@ func (d *DataBase) SaveBatchURL(ctx context.Context, batch []URLPair) error {
 	return tx.Commit()
 }
 
+// GetURL retrieves a URL mapping from the database by short URL.
 func (d *DataBase) GetURL(ctx context.Context, short string) (models.GetURLDTO, error) {
 	var urlDTO models.GetURLDTO
 	err := d.db.GetContext(ctx, &urlDTO, "SELECT original_url, is_deleted FROM url WHERE short_url = $1", short)
@@ -90,6 +122,7 @@ func (d *DataBase) GetURL(ctx context.Context, short string) (models.GetURLDTO, 
 	return urlDTO, nil
 }
 
+// GetURLList retrieves all URL mappings for a user from the database.
 func (d *DataBase) GetURLList(ctx context.Context, userID string) ([]models.BaseURLDTO, error) {
 	var data []models.BaseURLDTO
 	err := d.db.SelectContext(ctx, &data, "SELECT original_url, short_url FROM url WHERE user_id = $1", userID)
@@ -103,12 +136,13 @@ func (d *DataBase) GetURLList(ctx context.Context, userID string) ([]models.Base
 	return data, err
 }
 
+// DeleteURLList marks a list of URLs as deleted in the database.
 func (d *DataBase) DeleteURLList(values []interface{}, placeholders []string) (int64, error) {
 	query := fmt.Sprintf(`
-		UPDATE url 
-		SET is_deleted = TRUE 
-		WHERE (user_id,short_url) in (%s)
-	`, strings.Join(placeholders, ", "))
+       UPDATE url 
+       SET is_deleted = TRUE 
+       WHERE (user_id,short_url) in (%s)
+    `, strings.Join(placeholders, ", "))
 
 	result, err := d.db.Exec(query, values...)
 	if err != nil {
@@ -123,6 +157,7 @@ func (d *DataBase) DeleteURLList(values []interface{}, placeholders []string) (i
 	return ra, nil
 }
 
+// Close closes the database connection.
 func (d *DataBase) Close() error {
 	return d.db.Close()
 }

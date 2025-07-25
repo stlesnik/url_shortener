@@ -13,6 +13,7 @@ import (
 
 const migrationsDir = "./internal/migrator/migrations"
 
+// Run applies database migrations using the provided DSN.
 func Run(dsn string) {
 	m, err := migrate.New("file://"+migrationsDir, dsn)
 	if err != nil {

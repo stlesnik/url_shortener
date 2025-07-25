@@ -2,11 +2,13 @@ package middleware
 
 import (
 	"compress/gzip"
-	"github.com/stlesnik/url_shortener/internal/logger"
 	"net/http"
 	"strings"
+
+	"github.com/stlesnik/url_shortener/internal/logger"
 )
 
+// WithDecompress is a middleware that decompresses gzip-encoded requests.
 func WithDecompress(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Content-Encoding") != "gzip" {
@@ -29,12 +31,14 @@ func WithDecompress(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+// gzipResponseWriter wraps http.ResponseWriter for gzip.
 type gzipResponseWriter struct {
 	http.ResponseWriter
 	writer      *gzip.Writer
 	wroteHeader bool
 }
 
+// WriteHeader writes the HTTP header and sets up gzip if needed.
 func (gw *gzipResponseWriter) WriteHeader(status int) {
 	if !gw.wroteHeader {
 		ct := gw.Header().Get("Content-Type")
@@ -47,6 +51,7 @@ func (gw *gzipResponseWriter) WriteHeader(status int) {
 	gw.ResponseWriter.WriteHeader(status)
 }
 
+// Write writes the response body, compressing it if gzip is enabled.
 func (gw *gzipResponseWriter) Write(b []byte) (int, error) {
 	if !gw.wroteHeader {
 		gw.WriteHeader(http.StatusOK)
@@ -58,6 +63,7 @@ func (gw *gzipResponseWriter) Write(b []byte) (int, error) {
 	return gw.ResponseWriter.Write(b)
 }
 
+// WithCompress is a middleware that compresses responses using gzip if supported by the client.
 func WithCompress(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {

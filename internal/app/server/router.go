@@ -1,14 +1,18 @@
 package server
 
 import (
+	"net/http"
+	_ "net/http/pprof"
+
+	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/stlesnik/url_shortener/internal/app/handlers"
 	"github.com/stlesnik/url_shortener/internal/app/middleware"
 	"github.com/stlesnik/url_shortener/internal/app/services"
-	"net/http"
 )
 
 func (s *Server) setupRoutes() {
-	service := services.New(s.repo, s.cfg, s.daemonsDoneCh)
+	service := services.New(s.repo, s.cfg)
+	service.InitDeleteDaemon(s.daemonsDoneCh)
 	hs := handlers.New(service)
 	wrap := func(h http.HandlerFunc) http.HandlerFunc {
 		return middleware.WithAuth(s.cfg,
@@ -27,4 +31,5 @@ func (s *Server) setupRoutes() {
 	s.router.Get("/api/user/urls", wrap(hs.APIGetUserURLs))
 	s.router.Delete("/api/user/urls", wrap(hs.APIDeleteUserURLs))
 
+	s.router.Mount("/debug", chiMiddleware.Profiler())
 }

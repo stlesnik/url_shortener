@@ -2,14 +2,15 @@ package services
 
 import (
 	"context"
-	"github.com/stlesnik/url_shortener/internal/app/models"
-	"github.com/stlesnik/url_shortener/internal/app/repository"
-	"github.com/stlesnik/url_shortener/internal/config"
-	"github.com/stlesnik/url_shortener/internal/logger"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/stlesnik/url_shortener/internal/app/models"
+	"github.com/stlesnik/url_shortener/internal/app/repository"
+	"github.com/stlesnik/url_shortener/internal/config"
+	"github.com/stlesnik/url_shortener/internal/logger"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -59,7 +60,7 @@ func TestServices_CreateSavePrepareShortURL(t *testing.T) {
 			wantError: false,
 		},
 		{
-			name:        "Repository failure",
+			name:        "Storager failure",
 			longURL:     "https://google.com",
 			wantError:   true,
 			repoFailure: true,
@@ -74,7 +75,7 @@ func TestServices_CreateSavePrepareShortURL(t *testing.T) {
 				storage: make(map[string]string),
 				fail:    tt.repoFailure,
 			}
-			service := New(repo, cfg, nil)
+			service := New(repo, cfg)
 
 			shortURL, _, err := service.GenerateShortURL(context.Background(), tt.longURL, "")
 
@@ -91,7 +92,7 @@ func TestServices_CreateSavePrepareShortURL(t *testing.T) {
 }
 
 func TestServices_CreateShortURLHash(t *testing.T) {
-	service := New(nil, &config.Config{}, nil)
+	service := New(nil, &config.Config{})
 
 	t.Run("Hash generation", func(t *testing.T) {
 		url1 := "https://google.com"
@@ -115,7 +116,7 @@ func TestServices_SaveShortURL(t *testing.T) {
 		wantError   bool
 	}{
 		{"Successful save", false, false},
-		{"Repository failure", true, true},
+		{"Storager failure", true, true},
 	}
 
 	cfg := &config.Config{}
@@ -128,7 +129,7 @@ func TestServices_SaveShortURL(t *testing.T) {
 				storage: make(map[string]string),
 				fail:    tt.repoFailure,
 			}
-			service := New(repo, cfg, nil)
+			service := New(repo, cfg)
 
 			_, err := service.SaveShortURL(context.Background(), hash, longURL, "")
 
@@ -151,7 +152,7 @@ func TestServices_SaveBatchShortURL(t *testing.T) {
 	}{
 		{"Successful save", false, false},
 		{"Successful save to db", false, false},
-		{"Repository failure", true, true},
+		{"Storager failure", true, true},
 	}
 
 	cfg := &config.Config{}
@@ -169,7 +170,7 @@ func TestServices_SaveBatchShortURL(t *testing.T) {
 				fail:    tt.repoFailure,
 			}
 
-			service := New(repo, cfg, nil)
+			service := New(repo, cfg)
 
 			err := service.SaveBatchShortURL(context.Background(), urlPairList)
 
@@ -184,7 +185,7 @@ func TestServices_SaveBatchShortURL(t *testing.T) {
 
 func TestServices_PrepareShortURL(t *testing.T) {
 	cfg := &config.Config{BaseURL: "http://localhost:8080"}
-	service := New(nil, cfg, nil)
+	service := New(nil, cfg)
 	hash := "abc123"
 
 	result := service.PrepareShortURL(hash)
@@ -211,7 +212,7 @@ func TestServices_GetLongURLFromDB(t *testing.T) {
 			if tt.prepopulate {
 				repo.storage[tt.hash] = tt.wantRes.OriginalURL
 			}
-			service := New(repo, cfg, nil)
+			service := New(repo, cfg)
 
 			result, err := service.GetLongURLFromDB(context.Background(), tt.hash)
 
@@ -232,7 +233,7 @@ func TestHandler_GetLongURLFromReq(t *testing.T) {
 	require.NoError(t, err)
 	repo := repository.NewInMemoryRepository()
 
-	service := New(repo, cfg, nil)
+	service := New(repo, cfg)
 
 	type expected struct {
 		longURLStr string

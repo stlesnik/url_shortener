@@ -14,13 +14,16 @@ import (
 	"github.com/google/uuid"
 )
 
+// contextKey is a type for context keys used in middleware.
 type contextKey string
 
-const (
-	TokenExp                 = time.Hour * 24
-	UserIDKeyName contextKey = "userID"
-)
+// TokenExp is JWT expiration.
+const TokenExp = time.Hour * 24
 
+// UserIDKeyName is the user ID context key.
+const UserIDKeyName contextKey = "userID"
+
+// WithAuth is a middleware that checks for user authentication and sets user ID in context.
 func WithAuth(cfg *config.Config, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, err := getUserIDFromCookie(r, cfg.AuthSecretKey)
@@ -46,11 +49,13 @@ func WithAuth(cfg *config.Config, next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+// Claims is JWT claims with user ID.
 type Claims struct {
 	jwt.RegisteredClaims
 	UserID string
 }
 
+// createSignedCookie creates a signed JWT cookie for the given user ID.
 func createSignedCookie(userID string, secretKey string) (*http.Cookie, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -73,6 +78,7 @@ func createSignedCookie(userID string, secretKey string) (*http.Cookie, error) {
 	}, nil
 }
 
+// getUserIDFromCookie extracts the user ID from the JWT cookie.
 func getUserIDFromCookie(r *http.Request, secretKey string) (string, error) {
 	cookie, err := r.Cookie("auth_token")
 	if err != nil {

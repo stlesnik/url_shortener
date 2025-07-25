@@ -1,20 +1,27 @@
 package server
 
 import (
+	"errors"
+	"net/http"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/stlesnik/url_shortener/internal/app/services"
 	"github.com/stlesnik/url_shortener/internal/config"
-	"net/http"
 )
 
+// Server represents the HTTP server for the URL shortener service.
 type Server struct {
 	router        chi.Router
-	repo          services.Repository
+	repo          services.Storager
 	cfg           *config.Config
 	daemonsDoneCh chan struct{}
 }
 
-func New(repo services.Repository, cfg *config.Config, daemonsDoneCh chan struct{}) *Server {
+// New creates a new Server instance with the given repository, config, and daemons channel.
+func New(repo services.Storager, cfg *config.Config, daemonsDoneCh chan struct{}) (*Server, error) {
+	if repo == nil || cfg == nil || daemonsDoneCh == nil {
+		return nil, errors.New("repository, config, or daemons channel is nil")
+	}
 	s := &Server{
 		router:        chi.NewRouter(),
 		repo:          repo,
@@ -22,9 +29,10 @@ func New(repo services.Repository, cfg *config.Config, daemonsDoneCh chan struct
 		daemonsDoneCh: daemonsDoneCh,
 	}
 	s.setupRoutes()
-	return s
+	return s, nil
 }
 
+// Start runs the HTTP server.
 func (s *Server) Start() error {
 	return http.ListenAndServe(s.cfg.ServerAddress, s.router)
 }
