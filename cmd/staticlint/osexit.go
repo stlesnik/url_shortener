@@ -6,12 +6,15 @@ import (
 	"golang.org/x/tools/go/analysis"
 )
 
+// NoExitAnalyzer is an analyzer that reports usage of os.Exit inside
+// the main function of the main package.
 var NoExitAnalyzer = &analysis.Analyzer{
 	Name: "osexit",
 	Doc:  "forbid direct calls to os.Exit in main.main function",
 	Run:  run,
 }
 
+// run performs the analysis for NoExitAnalyzer.
 func run(pass *analysis.Pass) (interface{}, error) {
 	if pass.Pkg.Name() != "main" {
 		return nil, nil
