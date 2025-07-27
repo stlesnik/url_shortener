@@ -2,12 +2,11 @@ package main
 
 import (
 	"fmt"
-	"log"
-
 	"github.com/stlesnik/url_shortener/internal/app/server"
 	"github.com/stlesnik/url_shortener/internal/app/services"
 	"github.com/stlesnik/url_shortener/internal/config"
 	"github.com/stlesnik/url_shortener/internal/logger"
+	"log"
 )
 
 func main() {
@@ -25,8 +24,8 @@ func main() {
 		panic(fmt.Errorf("logger broke: %w", logErr))
 	}
 	defer func() {
-		if err := logger.Sugaarz.Sync(); err != nil {
-			logger.Sugaarz.Errorw("failed to sync logger", "error", err)
+		if syncErr := logger.Sugaarz.Sync(); syncErr != nil {
+			logger.Sugaarz.Errorw("failed to sync logger", "error", syncErr)
 		}
 	}()
 
@@ -36,8 +35,8 @@ func main() {
 		return
 	}
 	defer func() {
-		if err := repo.Close(); err != nil {
-			logger.Sugaarz.Errorw("Failed to close repository", "error", err)
+		if closeErr := repo.Close(); closeErr != nil {
+			logger.Sugaarz.Errorw("Failed to close repository", "error", closeErr)
 		}
 	}()
 
