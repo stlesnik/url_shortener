@@ -9,6 +9,12 @@ import (
 	"log"
 )
 
+var (
+	buildVersion = "N/A"
+	buildDate    = "N/A"
+	buildCommit  = "N/A"
+)
+
 func main() {
 	daemonsDoneCh := make(chan struct{})
 	defer close(daemonsDoneCh)
@@ -47,9 +53,15 @@ func main() {
 	}
 
 	log.Printf("Сервер запущен на %s", cfg.ServerAddress)
+
+	fmt.Printf("Build version: %s\n", buildVersion)
+	fmt.Printf("Build date: %s\n", buildDate)
+	fmt.Printf("Build commit: %s\n", buildCommit)
+
 	err = srv.Start()
 	if err != nil {
 		log.Fatalf("Не получилось запустить сервер: %s", err)
 		return
 	}
+
 }
