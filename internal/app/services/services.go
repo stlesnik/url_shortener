@@ -212,11 +212,13 @@ func (s *URLShortenerService) DeleteUrls() {
 	plInd := 1
 	do := func(v []interface{}, pl []string) {
 		logger.Sugaarz.Debugf("deleting urls for userID: values len=%v placeholders len=%v", len(v), len(pl))
-		rowsAffected, err := s.repo.(DBStorager).DeleteURLList(v, pl)
-		if err != nil {
-			logger.Sugaarz.Error(err)
-		} else {
-			logger.Sugaarz.Debug(rowsAffected, "rows were updated on delete")
+		if repo, ok := s.repo.(DBStorager); ok {
+			rowsAffected, err := repo.DeleteURLList(v, pl)
+			if err != nil {
+				logger.Sugaarz.Error(err)
+			} else {
+				logger.Sugaarz.Debug(rowsAffected, "rows were updated on delete")
+			}
 		}
 	}
 

@@ -2,12 +2,17 @@ package main
 
 import (
 	"fmt"
-	"log"
-
 	"github.com/stlesnik/url_shortener/internal/app/server"
 	"github.com/stlesnik/url_shortener/internal/app/services"
 	"github.com/stlesnik/url_shortener/internal/config"
 	"github.com/stlesnik/url_shortener/internal/logger"
+	"log"
+)
+
+var (
+	buildVersion = "N/A"
+	buildDate    = "N/A"
+	buildCommit  = "N/A"
 )
 
 func main() {
@@ -25,8 +30,8 @@ func main() {
 		panic(fmt.Errorf("logger broke: %w", logErr))
 	}
 	defer func() {
-		if err := logger.Sugaarz.Sync(); err != nil {
-			logger.Sugaarz.Errorw("failed to sync logger", "error", err)
+		if syncErr := logger.Sugaarz.Sync(); syncErr != nil {
+			logger.Sugaarz.Errorw("failed to sync logger", "error", syncErr)
 		}
 	}()
 
@@ -36,8 +41,8 @@ func main() {
 		return
 	}
 	defer func() {
-		if err := repo.Close(); err != nil {
-			logger.Sugaarz.Errorw("Failed to close repository", "error", err)
+		if closeErr := repo.Close(); closeErr != nil {
+			logger.Sugaarz.Errorw("Failed to close repository", "error", closeErr)
 		}
 	}()
 
@@ -48,9 +53,15 @@ func main() {
 	}
 
 	log.Printf("Сервер запущен на %s", cfg.ServerAddress)
+
+	fmt.Printf("Build version: %s\n", buildVersion)
+	fmt.Printf("Build date: %s\n", buildDate)
+	fmt.Printf("Build commit: %s\n", buildCommit)
+
 	err = srv.Start()
 	if err != nil {
 		log.Fatalf("Не получилось запустить сервер: %s", err)
 		return
 	}
+
 }
