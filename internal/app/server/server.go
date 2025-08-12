@@ -2,6 +2,7 @@ package server
 
 import (
 	"errors"
+	"golang.org/x/crypto/acme/autocert"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -22,6 +23,7 @@ func New(repo services.Storager, cfg *config.Config, daemonsDoneCh chan struct{}
 	if repo == nil || cfg == nil || daemonsDoneCh == nil {
 		return nil, errors.New("repository, config, or daemons channel is nil")
 	}
+
 	s := &Server{
 		router:        chi.NewRouter(),
 		repo:          repo,
@@ -34,5 +36,18 @@ func New(repo services.Storager, cfg *config.Config, daemonsDoneCh chan struct{}
 
 // Start runs the HTTP server.
 func (s *Server) Start() error {
-	return http.ListenAndServe(s.cfg.ServerAddress, s.router)
+	server := &http.Server{
+		Addr:    s.cfg.ServerAddress,
+		Handler: s.router,
+	}
+	if s.cfg.EnableHTTPS {
+		manager := &autocert.Manager{
+			Cache:      autocert.DirCache("cache-dir"),
+			Prompt:     autocert.AcceptTOS,
+			HostPolicy: autocert.HostWhitelist(),
+		}
+		server.TLSConfig = manager.TLSConfig()
+		return server.ListenAndServeTLS("", "")
+	}
+	return server.ListenAndServe()
 }
