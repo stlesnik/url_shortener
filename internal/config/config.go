@@ -14,6 +14,7 @@ type Config struct {
 	Environment     string `env:"ENVIRONMENT"`
 	DatabaseDSN     string `env:"DATABASE_DSN"`
 	AuthSecretKey   string `env:"AUTH_SECRET_KEY"`
+	EnableHTTPS     bool   `env:"ENABLE_HTTPS"`
 }
 
 // New creates a new Config by parsing flags and environment variables.
@@ -26,13 +27,15 @@ func New() (*Config, error) {
 	defaultEnvironment := "dev"
 	defaultDatabaseDSN := ""
 	defaultAuthSecretKey := "url_shortener_secret_key"
+	defaultEnableHTTPS := false
 
 	flag.StringVar(&cfg.ServerAddress, "a", defaultAddress, "Address to run the server")
 	flag.StringVar(&cfg.BaseURL, "b", defaultBaseURL, "Base URL for shortened links")
 	flag.StringVar(&cfg.FileStoragePath, "f", defaultFile, "Path to file for persistent storage")
 	flag.StringVar(&cfg.Environment, "e", defaultEnvironment, "Environment")
 	flag.StringVar(&cfg.DatabaseDSN, "d", defaultDatabaseDSN, "Database url")
-	flag.StringVar(&cfg.AuthSecretKey, "s", defaultAuthSecretKey, "Secret key for jwt token generation")
+	flag.StringVar(&cfg.AuthSecretKey, "j", defaultAuthSecretKey, "Secret key for jwt token generation")
+	flag.BoolVar(&cfg.EnableHTTPS, "s", defaultEnableHTTPS, "Flag to enable HTTPS")
 	flag.Parse()
 
 	if err := env.Parse(cfg); err != nil {
