@@ -1,8 +1,6 @@
 package config
 
 import (
-	"flag"
-
 	"github.com/caarlos0/env/v6"
 )
 
@@ -17,30 +15,27 @@ type Config struct {
 	EnableHTTPS     bool   `env:"ENABLE_HTTPS"`
 }
 
-// New creates a new Config by parsing flags and environment variables.
+// New creates a new Config by parsing configuration file, environment variables, and flags.
 func New() (*Config, error) {
-	cfg := &Config{}
+	cfg := &Config{
+		ServerAddress:   "localhost:8080",
+		BaseURL:         "http://localhost:8080",
+		FileStoragePath: "",
+		Environment:     "dev",
+		DatabaseDSN:     "",
+		AuthSecretKey:   "url_shortener_secret_key",
+		EnableHTTPS:     false,
+	}
 
-	defaultAddress := "localhost:8080"
-	defaultBaseURL := "http://localhost:8080"
-	defaultFile := ""
-	defaultEnvironment := "dev"
-	defaultDatabaseDSN := ""
-	defaultAuthSecretKey := "url_shortener_secret_key"
-	defaultEnableHTTPS := false
-
-	flag.StringVar(&cfg.ServerAddress, "a", defaultAddress, "Address to run the server")
-	flag.StringVar(&cfg.BaseURL, "b", defaultBaseURL, "Base URL for shortened links")
-	flag.StringVar(&cfg.FileStoragePath, "f", defaultFile, "Path to file for persistent storage")
-	flag.StringVar(&cfg.Environment, "e", defaultEnvironment, "Environment")
-	flag.StringVar(&cfg.DatabaseDSN, "d", defaultDatabaseDSN, "Database url")
-	flag.StringVar(&cfg.AuthSecretKey, "j", defaultAuthSecretKey, "Secret key for jwt token generation")
-	flag.BoolVar(&cfg.EnableHTTPS, "s", defaultEnableHTTPS, "Flag to enable HTTPS")
-	flag.Parse()
+	if err := applyFileConfig(cfg); err != nil {
+		return nil, err
+	}
 
 	if err := env.Parse(cfg); err != nil {
 		return nil, err
 	}
+
+	parseFlags(cfg)
 
 	return cfg, nil
 }
