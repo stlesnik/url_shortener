@@ -49,3 +49,12 @@ type DeleteTask struct {
 	URLHash string
 	UserID  string
 }
+
+// fileConfig represents the JSON configuration file structure.
+type FileConfig struct {
+	ServerAddress   string `json:"server_address"`
+	BaseURL         string `json:"base_url"`
+	FileStoragePath string `json:"file_storage_path"`
+	DatabaseDSN     string `json:"database_dsn"`
+	EnableHTTPS     bool   `json:"enable_https"`
+}
