@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"golang.org/x/crypto/acme/autocert"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 
 // Server represents the HTTP server for the URL shortener service.
 type Server struct {
+	httpServer    *http.Server
 	router        chi.Router
 	repo          services.Storager
 	cfg           *config.Config
@@ -31,23 +33,32 @@ func New(repo services.Storager, cfg *config.Config, daemonsDoneCh chan struct{}
 		daemonsDoneCh: daemonsDoneCh,
 	}
 	s.setupRoutes()
-	return s, nil
-}
 
-// Start runs the HTTP server.
-func (s *Server) Start() error {
-	server := &http.Server{
-		Addr:    s.cfg.ServerAddress,
+	s.httpServer = &http.Server{
+		Addr:    cfg.ServerAddress,
 		Handler: s.router,
 	}
-	if s.cfg.EnableHTTPS {
+
+	if cfg.EnableHTTPS {
 		manager := &autocert.Manager{
 			Cache:      autocert.DirCache("cache-dir"),
 			Prompt:     autocert.AcceptTOS,
 			HostPolicy: autocert.HostWhitelist(),
 		}
-		server.TLSConfig = manager.TLSConfig()
-		return server.ListenAndServeTLS("", "")
+		s.httpServer.TLSConfig = manager.TLSConfig()
 	}
-	return server.ListenAndServe()
+
+	return s, nil
+}
+
+// Start runs the HTTP server.
+func (s *Server) Start() error {
+	if s.cfg.EnableHTTPS {
+		return s.httpServer.ListenAndServeTLS("", "")
+	}
+	return s.httpServer.ListenAndServe()
+}
+
+func (s *Server) Shutdown(ctx context.Context) error {
+	return s.httpServer.Shutdown(ctx)
 }
