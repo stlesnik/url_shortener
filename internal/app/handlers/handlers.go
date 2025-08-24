@@ -230,6 +230,28 @@ func (h *Handler) APIDeleteUserURLs(res http.ResponseWriter, req *http.Request) 
 	logger.Sugaarz.Debugw("sent APIDeleteUserURLs response")
 }
 
+// APIGetStats handles GET requests from trusted subnet for app stats
+func (h *Handler) APIGetStats(res http.ResponseWriter, req *http.Request) {
+	logger.Sugaarz.Debugw("got APIGetStats response")
+	var appStatsObj models.APIResponseStats
+	appStatsDTO, err := h.service.GetStats(req.Context())
+	if err != nil {
+		logger.Sugaarz.Errorw("error getting app stats", "err", err)
+		WriteError(res, "error getting app stats", http.StatusInternalServerError, false)
+		return
+	}
+	appStatsObj.URLCount = appStatsDTO.URLCount
+	appStatsObj.UserCount = appStatsDTO.UserCount
+
+	res.Header().Set("Content-Type", "application/json")
+	res.WriteHeader(http.StatusOK)
+	if encodeErr := json.NewEncoder(res).Encode(appStatsObj); encodeErr != nil {
+		logger.Sugaarz.Errorw("error encoding body", "err", encodeErr)
+		WriteError(res, "failed to encode body", http.StatusInternalServerError, true)
+		return
+	}
+}
+
 // PingDB handles health check requests to verify database connectivity.
 func (h *Handler) PingDB(res http.ResponseWriter, req *http.Request) {
 	logger.Sugaarz.Debugw("got PingDB request")

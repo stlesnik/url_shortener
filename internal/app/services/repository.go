@@ -27,4 +27,5 @@ type DBStorager interface {
 	GetURLList(ctx context.Context, userID string) ([]models.BaseURLDTO, error)
 	SaveBatchURL(ctx context.Context, entries []repository.URLPair) error
 	DeleteURLList(values []interface{}, placeholders []string) (int64, error)
+	GetStats(ctx context.Context) (models.StatsDTO, error)
 }
