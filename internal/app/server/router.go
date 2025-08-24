@@ -30,6 +30,7 @@ func (s *Server) setupRoutes() {
 	s.router.Post("/api/shorten/batch", wrap(hs.APIPrepareBatchShortURL))
 	s.router.Get("/api/user/urls", wrap(hs.APIGetUserURLs))
 	s.router.Delete("/api/user/urls", wrap(hs.APIDeleteUserURLs))
+	s.router.Get("/api/internal/stats", middleware.WithTrustedSubnet(s.cfg, wrap(hs.APIGetStats)))
 
 	s.router.Mount("/debug", chiMiddleware.Profiler())
 }

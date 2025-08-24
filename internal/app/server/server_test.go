@@ -7,10 +7,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/golang/mock/gomock"
-	"github.com/stlesnik/url_shortener/internal/app/server/mocks"
+	"github.com/stlesnik/url_shortener/internal/app/services/mocks"
 	"github.com/stlesnik/url_shortener/internal/config"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestServer(t *testing.T) {

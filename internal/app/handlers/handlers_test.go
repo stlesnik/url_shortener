@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/golang/mock/gomock"
 	"github.com/stlesnik/url_shortener/internal/app/middleware"
 	"github.com/stlesnik/url_shortener/internal/app/models"
 	"github.com/stlesnik/url_shortener/internal/app/repository"
@@ -19,6 +18,7 @@ import (
 	"github.com/stlesnik/url_shortener/internal/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 )
 
 func TestHandler_SaveURL(t *testing.T) {
@@ -87,7 +87,7 @@ func TestHandler_SaveURL(t *testing.T) {
 func TestHandler_SaveURL_Conflict_WithMockRepo(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	m := mocks.NewMockRepository(ctrl)
+	m := mocks.NewMockStorager(ctrl)
 
 	const longURL = "http://example.com"
 	gomock.InOrder(
@@ -253,7 +253,7 @@ func TestHandler_APIGetUserURLs(t *testing.T) {
 
 	type (
 		FullRepo struct {
-			*mocks.MockDBRepository
+			*mocks.MockDBStorager
 		}
 	)
 
@@ -269,7 +269,7 @@ func TestHandler_APIGetUserURLs(t *testing.T) {
 			name: "Репо поддерживает URLList - успех",
 			setupRepo: func() services.Storager {
 				fr := &FullRepo{
-					mocks.NewMockDBRepository(ctrl),
+					mocks.NewMockDBStorager(ctrl),
 				}
 				return fr
 			},
@@ -277,7 +277,7 @@ func TestHandler_APIGetUserURLs(t *testing.T) {
 				return r.WithContext(context.WithValue(r.Context(), middleware.UserIDKeyName, "user123"))
 			},
 			expectCall: func(fr *FullRepo) {
-				fr.MockDBRepository.EXPECT().
+				fr.MockDBStorager.EXPECT().
 					GetURLList(gomock.Any(), "user123").
 					Return([]models.BaseURLDTO{
 						{ShortURLHash: "abc", OriginalURL: "https://ya.ru"},
@@ -290,7 +290,7 @@ func TestHandler_APIGetUserURLs(t *testing.T) {
 			name: "Нет записей - StatusNoContent",
 			setupRepo: func() services.Storager {
 				fr := &FullRepo{
-					mocks.NewMockDBRepository(ctrl),
+					mocks.NewMockDBStorager(ctrl),
 				}
 				return fr
 			},
@@ -298,7 +298,7 @@ func TestHandler_APIGetUserURLs(t *testing.T) {
 				return r.WithContext(context.WithValue(r.Context(), middleware.UserIDKeyName, "user123"))
 			},
 			expectCall: func(fr *FullRepo) {
-				fr.MockDBRepository.EXPECT().
+				fr.MockDBStorager.EXPECT().
 					GetURLList(gomock.Any(), "user123").
 					Return([]models.BaseURLDTO{}, nil) // Пустой список
 			},
@@ -345,6 +345,34 @@ func TestHandler_APIGetUserURLs(t *testing.T) {
 	}
 }
 
+func TestHandler_APIGetStats(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	m := mocks.NewMockDBStorager(ctrl)
+
+	m.EXPECT().GetStats(gomock.Any()).Return(models.StatsDTO{URLCount: 1, UserCount: 1}, nil)
+
+	cfg := &config.Config{BaseURL: "http://localhost:8000", TrustedSubnet: "192.168.1.0/24"}
+	err := logger.InitLogger(cfg.Environment)
+	require.NoError(t, err)
+	service := services.New(m, cfg)
+	handler := New(service)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/internal/stats", nil)
+	req.Header.Add("X-Real-IP", "192.168.1.10")
+	w := httptest.NewRecorder()
+	handler.APIGetStats(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
+	res := w.Result()
+	body, err := io.ReadAll(res.Body)
+	require.NoError(t, err)
+	err = res.Body.Close()
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"urls":1,"users":1}`, string(body))
+}
+
 func TestHandler_PingDB(t *testing.T) {
 	cfg := &config.Config{BaseURL: "http://localhost:8000"} // Добавляем конфиг
 	err := logger.InitLogger(cfg.Environment)
@@ -352,7 +380,7 @@ func TestHandler_PingDB(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	m := mocks.NewMockRepository(ctrl)
+	m := mocks.NewMockStorager(ctrl)
 	m.EXPECT().Ping(context.Background()).Return(nil)
 	require.NoError(t, err)
 	service := services.New(m, cfg)

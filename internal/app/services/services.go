@@ -198,7 +198,18 @@ func (s *URLShortenerService) GenerateDeleteTasks(userID string, urlHashes []str
 	} else {
 		logger.Sugaarz.Error("not implemented error")
 	}
+}
 
+func (s *URLShortenerService) GetStats(ctx context.Context) (models.StatsDTO, error) {
+	if rep, ok := s.repo.(DBStorager); ok {
+		statsDTO, err := rep.GetStats(ctx)
+		return statsDTO, err
+	} else {
+		return models.StatsDTO{
+			URLCount:  0,
+			UserCount: 0,
+		}, errors.New("not implemented error")
+	}
 }
 
 // DeleteUrls runs a background process to delete URLs in batches.

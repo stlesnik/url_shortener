@@ -6,6 +6,12 @@ type GetURLDTO struct {
 	IsDeleted   bool   `db:"is_deleted"`
 }
 
+// StatsDTO represents app stats
+type StatsDTO struct {
+	URLCount  int
+	UserCount int
+}
+
 // APIPrepareShortURL
 // APIRequestPrepareShURL represents a request to shorten a URL.
 type APIRequestPrepareShURL struct {
@@ -48,6 +54,13 @@ type BaseURLResponse struct {
 type DeleteTask struct {
 	URLHash string
 	UserID  string
+}
+
+// APIGetStats
+// APIResponseStats represents stats response
+type APIResponseStats struct {
+	UrlCount  int `json:"urls"`
+	UserCount int `json:"users"`
 }
 
 // fileConfig represents the JSON configuration file structure.
