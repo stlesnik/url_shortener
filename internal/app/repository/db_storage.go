@@ -157,6 +157,7 @@ func (d *DataBase) DeleteURLList(values []interface{}, placeholders []string) (i
 	return ra, nil
 }
 
+// GetStats retrieves statistics about db.
 func (d *DataBase) GetStats(ctx context.Context) (models.StatsDTO, error) {
 	var stats models.StatsDTO
 	err := d.db.SelectContext(ctx, stats.URLCount, `SELECT COUNT(*) FROM url GROUP BY short_url`)

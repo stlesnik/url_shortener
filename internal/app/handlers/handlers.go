@@ -240,7 +240,7 @@ func (h *Handler) APIGetStats(res http.ResponseWriter, req *http.Request) {
 		WriteError(res, "error getting app stats", http.StatusInternalServerError, false)
 		return
 	}
-	appStatsObj.UrlCount = appStatsDTO.URLCount
+	appStatsObj.URLCount = appStatsDTO.URLCount
 	appStatsObj.UserCount = appStatsDTO.UserCount
 
 	res.Header().Set("Content-Type", "application/json")

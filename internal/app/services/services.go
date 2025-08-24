@@ -200,6 +200,7 @@ func (s *URLShortenerService) GenerateDeleteTasks(userID string, urlHashes []str
 	}
 }
 
+// GetStats retrieves statistics about database content.
 func (s *URLShortenerService) GetStats(ctx context.Context) (models.StatsDTO, error) {
 	if rep, ok := s.repo.(DBStorager); ok {
 		statsDTO, err := rep.GetStats(ctx)

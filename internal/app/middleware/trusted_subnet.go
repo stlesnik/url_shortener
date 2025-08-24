@@ -6,6 +6,7 @@ import (
 	"net/http"
 )
 
+// WithTrustedSubnet is a middleware that checks if IP in request is in trusted subnet.
 func WithTrustedSubnet(cfg *config.Config, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if cfg.TrustedSubnet == "" {

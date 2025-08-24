@@ -59,7 +59,7 @@ type DeleteTask struct {
 // APIGetStats
 // APIResponseStats represents stats response
 type APIResponseStats struct {
-	UrlCount  int `json:"urls"`
+	URLCount  int `json:"urls"`
 	UserCount int `json:"users"`
 }
 
