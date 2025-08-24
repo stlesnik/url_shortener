@@ -13,6 +13,7 @@ type Config struct {
 	DatabaseDSN     string `env:"DATABASE_DSN"`
 	AuthSecretKey   string `env:"AUTH_SECRET_KEY"`
 	EnableHTTPS     bool   `env:"ENABLE_HTTPS"`
+	TrustedSubnet   string `env:"TRUSTED_SUBNET"`
 }
 
 // New creates a new Config by parsing configuration file, environment variables, and flags.
@@ -25,6 +26,7 @@ func New() (*Config, error) {
 		DatabaseDSN:     "",
 		AuthSecretKey:   "url_shortener_secret_key",
 		EnableHTTPS:     false,
+		TrustedSubnet:   "",
 	}
 
 	if err := applyFileConfig(cfg); err != nil {

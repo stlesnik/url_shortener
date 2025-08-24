@@ -22,6 +22,7 @@ func TestNew(t *testing.T) {
 		assert.Equal(t, "", cfg.DatabaseDSN)
 		assert.Equal(t, "url_shortener_secret_key", cfg.AuthSecretKey)
 		assert.Equal(t, false, cfg.EnableHTTPS)
+		assert.Equal(t, "", cfg.TrustedSubnet)
 	})
 
 	// Test case 2: Environment variables
@@ -35,6 +36,7 @@ func TestNew(t *testing.T) {
 		assert.NoError(t, os.Setenv("DATABASE_DSN", "postgres://user:password@localhost:5432/db"))
 		assert.NoError(t, os.Setenv("AUTH_SECRET_KEY", "test_secret_key"))
 		assert.NoError(t, os.Setenv("ENABLE_HTTPS", "true"))
+		assert.NoError(t, os.Setenv("TRUSTED_SUBNET", "128.0.0.0"))
 
 		cfg, err := New()
 		assert.NoError(t, err)
@@ -45,6 +47,7 @@ func TestNew(t *testing.T) {
 		assert.Equal(t, "postgres://user:password@localhost:5432/db", cfg.DatabaseDSN)
 		assert.Equal(t, "test_secret_key", cfg.AuthSecretKey)
 		assert.Equal(t, true, cfg.EnableHTTPS)
+		assert.Equal(t, "128.0.0.0", cfg.TrustedSubnet)
 
 		assert.NoError(t, os.Unsetenv("SERVER_ADDRESS"))
 		assert.NoError(t, os.Unsetenv("BASE_URL"))
@@ -53,12 +56,13 @@ func TestNew(t *testing.T) {
 		assert.NoError(t, os.Unsetenv("DATABASE_DSN"))
 		assert.NoError(t, os.Unsetenv("AUTH_SECRET_KEY"))
 		assert.NoError(t, os.Unsetenv("ENABLE_HTTPS"))
+		assert.NoError(t, os.Unsetenv("TRUSTED_SUBNET"))
 	})
 
 	// Test case 3: Flags
 	t.Run("Flags", func(t *testing.T) {
 		resetFlags()
-		os.Args = []string{"cmd", "-a", "localhost:7070", "-b", "http://localhost:7070", "-f", "/tmp/test.db", "-e", "stage", "-d", "postgres://user:password@localhost:5432/testdb", "-j", "another_secret_key", "-s"}
+		os.Args = []string{"cmd", "-a", "localhost:7070", "-b", "http://localhost:7070", "-f", "/tmp/test.db", "-e", "stage", "-d", "postgres://user:password@localhost:5432/testdb", "-j", "another_secret_key", "-t", "10.0.0.0", "-s"}
 		cfg, err := New()
 		assert.NoError(t, err)
 		assert.Equal(t, "localhost:7070", cfg.ServerAddress)
@@ -68,6 +72,7 @@ func TestNew(t *testing.T) {
 		assert.Equal(t, "postgres://user:password@localhost:5432/testdb", cfg.DatabaseDSN)
 		assert.Equal(t, "another_secret_key", cfg.AuthSecretKey)
 		assert.Equal(t, true, cfg.EnableHTTPS)
+		assert.Equal(t, "10.0.0.0", cfg.TrustedSubnet)
 	})
 
 	// Test case 4: Config file
@@ -81,7 +86,8 @@ func TestNew(t *testing.T) {
 			"base_url": "http://config.test",
 			"file_storage_path": "/tmp/config_db.json",
 			"database_dsn": "postgres://config:pass@localhost:5432/db",
-			"enable_https": true
+			"enable_https": true,
+			"trusted_subnet": "128.0.0.0"
 		}`
 
 		tmpFile, err := os.CreateTemp("", "config*.json")
@@ -105,6 +111,7 @@ func TestNew(t *testing.T) {
 		assert.Equal(t, "/tmp/config_db.json", cfg.FileStoragePath)
 		assert.Equal(t, "postgres://config:pass@localhost:5432/db", cfg.DatabaseDSN)
 		assert.True(t, cfg.EnableHTTPS)
+		assert.Equal(t, "128.0.0.0", cfg.TrustedSubnet)
 
 		// Fields not in config file should keep defaults
 		assert.Equal(t, "dev", cfg.Environment)

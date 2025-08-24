@@ -34,6 +34,7 @@ func applyFileConfig(cfg *Config) error {
 	cfg.FileStoragePath = fileCfg.FileStoragePath
 	cfg.DatabaseDSN = fileCfg.DatabaseDSN
 	cfg.EnableHTTPS = fileCfg.EnableHTTPS
+	cfg.TrustedSubnet = fileCfg.TrustedSubnet
 
 	return nil
 }
@@ -70,6 +71,7 @@ func parseFlags(cfg *Config) {
 	fs.StringVar(&cfg.DatabaseDSN, "d", cfg.DatabaseDSN, "Database url")
 	fs.StringVar(&cfg.AuthSecretKey, "j", cfg.AuthSecretKey, "Secret key for jwt token generation")
 	fs.BoolVar(&cfg.EnableHTTPS, "s", cfg.EnableHTTPS, "Flag to enable HTTPS")
+	fs.StringVar(&cfg.TrustedSubnet, "t", cfg.TrustedSubnet, "Flag to enable HTTPS")
 
 	_ = fs.Parse(os.Args[1:])
 
