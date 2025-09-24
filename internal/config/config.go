@@ -14,6 +14,7 @@ type Config struct {
 	AuthSecretKey   string `env:"AUTH_SECRET_KEY"`
 	EnableHTTPS     bool   `env:"ENABLE_HTTPS"`
 	TrustedSubnet   string `env:"TRUSTED_SUBNET"`
+	GRPCPort        string `env:"GRPC_PORT"`
 }
 
 // New creates a new Config by parsing configuration file, environment variables, and flags.
@@ -27,6 +28,7 @@ func New() (*Config, error) {
 		AuthSecretKey:   "url_shortener_secret_key",
 		EnableHTTPS:     false,
 		TrustedSubnet:   "",
+		GRPCPort:        "9090",
 	}
 
 	if err := applyFileConfig(cfg); err != nil {

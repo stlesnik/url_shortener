@@ -3,8 +3,9 @@ package server
 import (
 	"context"
 	"errors"
-	"golang.org/x/crypto/acme/autocert"
 	"net/http"
+
+	"golang.org/x/crypto/acme/autocert"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/stlesnik/url_shortener/internal/app/services"
@@ -18,6 +19,7 @@ type Server struct {
 	repo          services.Storager
 	cfg           *config.Config
 	daemonsDoneCh chan struct{}
+	service       *services.URLShortenerService
 }
 
 // New creates a new Server instance with the given repository, config, and daemons channel.
@@ -32,6 +34,11 @@ func New(repo services.Storager, cfg *config.Config, daemonsDoneCh chan struct{}
 		cfg:           cfg,
 		daemonsDoneCh: daemonsDoneCh,
 	}
+
+	// Initialize service
+	s.service = services.New(repo, cfg)
+	s.service.InitDeleteDaemon(daemonsDoneCh)
+
 	s.setupRoutes()
 
 	s.httpServer = &http.Server{
@@ -62,4 +69,9 @@ func (s *Server) Start() error {
 // Shutdown stops the HTTP server
 func (s *Server) Shutdown(ctx context.Context) error {
 	return s.httpServer.Shutdown(ctx)
+}
+
+// GetService returns the URLShortenerService instance
+func (s *Server) GetService() *services.URLShortenerService {
+	return s.service
 }

@@ -1,0 +1,129 @@
+syntax = "proto3";
+
+package api;
+
+option go_package = "github.com/stlesnik/url_shortener/api";
+
+// URL Shortener Service
+service URLShortener {
+  // SaveURL handles POST requests to save a new URL and return its shortened version.
+  rpc SaveURL(SaveURLRequest) returns (SaveURLResponse);
+  
+  // GetLongURL handles GET requests to retrieve the original URL from repository by its short hash.
+  rpc GetLongURL(GetLongURLRequest) returns (GetLongURLResponse);
+  
+  // APIPrepareShortURL handles API requests to shorten a URL and returns the result in JSON.
+  rpc APIPrepareShortURL(APIPrepareShortURLRequest) returns (APIPrepareShortURLResponse);
+  
+  // APIPrepareBatchShortURL handles API requests to shorten a batch of URLs and returns the results in JSON.
+  rpc APIPrepareBatchShortURL(APIPrepareBatchShortURLRequest) returns (APIPrepareBatchShortURLResponse);
+  
+  // APIGetUserURLs handles API requests to get all URLs for a user from repository.
+  rpc APIGetUserURLs(APIGetUserURLsRequest) returns (APIGetUserURLsResponse);
+  
+  // APIDeleteUserURLs handles API requests to delete a batch of user URLs asynchronously.
+  rpc APIDeleteUserURLs(APIDeleteUserURLsRequest) returns (APIDeleteUserURLsResponse);
+  
+  // APIGetStats handles GET requests from trusted subnet for app stats
+  rpc APIGetStats(APIGetStatsRequest) returns (APIGetStatsResponse);
+  
+  // PingDB handles health check requests to verify database connectivity.
+  rpc PingDB(PingDBRequest) returns (PingDBResponse);
+}
+
+// SaveURLRequest represents a request to create a short URL
+message SaveURLRequest {
+  string long_url = 1;
+  string user_id = 2;
+}
+
+// SaveURLResponse represents a response with a short URL
+message SaveURLResponse {
+  string short_url = 1;
+  bool is_double = 2;
+}
+
+// GetLongURLRequest represents a request to get original URL
+message GetLongURLRequest {
+  string url_hash = 1;
+}
+
+// GetLongURLResponse represents a response with original URL
+message GetLongURLResponse {
+  string original_url = 1;
+  bool is_deleted = 2;
+}
+
+// APIPrepareShortURLRequest represents an API request to create a short URL
+message APIPrepareShortURLRequest {
+  string long_url = 1;
+}
+
+// APIPrepareShortURLResponse represents an API response with a short URL
+message APIPrepareShortURLResponse {
+  string short_url = 1;
+  bool is_double = 2;
+}
+
+// URLPair represents a URL pair for batch operations
+message URLPair {
+  string correlation_id = 1;
+  string original_url = 2;
+  string short_url = 3;
+}
+
+// APIPrepareBatchShortURLRequest represents a batch request to create short URLs
+message APIPrepareBatchShortURLRequest {
+  repeated URLPair urls = 1;
+}
+
+// APIPrepareBatchShortURLResponse represents a batch response with short URLs
+message APIPrepareBatchShortURLResponse {
+  repeated URLPair urls = 1;
+}
+
+// BaseURLResponse represents a URL response for user URLs
+message BaseURLResponse {
+  string short_url = 1;
+  string original_url = 2;
+}
+
+// APIGetUserURLsRequest represents a request to get user URLs
+message APIGetUserURLsRequest {
+  string user_id = 1;
+}
+
+// APIGetUserURLsResponse represents a response with user URLs
+message APIGetUserURLsResponse {
+  repeated BaseURLResponse urls = 1;
+}
+
+// APIDeleteUserURLsRequest represents a request to delete user URLs
+message APIDeleteUserURLsRequest {
+  string user_id = 1;
+  repeated string url_hashes = 2;
+}
+
+// APIDeleteUserURLsResponse represents a response for delete operation
+message APIDeleteUserURLsResponse {
+  bool success = 1;
+}
+
+// APIGetStatsRequest represents a request to get application statistics
+message APIGetStatsRequest {
+}
+
+// APIGetStatsResponse represents a response with application statistics
+message APIGetStatsResponse {
+  int64 url_count = 1;
+  int64 user_count = 2;
+}
+
+// PingDBRequest represents a request to ping database
+message PingDBRequest {
+}
+
+// PingDBResponse represents a response for database ping
+message PingDBResponse {
+  bool success = 1;
+}

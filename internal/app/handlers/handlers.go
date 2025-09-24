@@ -12,7 +12,7 @@ import (
 
 // Handler handles HTTP requests for the URL shortener service.
 type Handler struct {
-	service *services.URLShortenerService // Вместо прямого доступа к repo и cfg
+	service *services.URLShortenerService
 }
 
 // New creates a new Handler with the provided service.
