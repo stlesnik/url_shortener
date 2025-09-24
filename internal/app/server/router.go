@@ -7,13 +7,10 @@ import (
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/stlesnik/url_shortener/internal/app/handlers"
 	"github.com/stlesnik/url_shortener/internal/app/middleware"
-	"github.com/stlesnik/url_shortener/internal/app/services"
 )
 
 func (s *Server) setupRoutes() {
-	service := services.New(s.repo, s.cfg)
-	service.InitDeleteDaemon(s.daemonsDoneCh)
-	hs := handlers.New(service)
+	hs := handlers.New(s.service)
 	wrap := func(h http.HandlerFunc) http.HandlerFunc {
 		return middleware.WithAuth(s.cfg,
 			middleware.WithLogging(
@@ -30,6 +27,7 @@ func (s *Server) setupRoutes() {
 	s.router.Post("/api/shorten/batch", wrap(hs.APIPrepareBatchShortURL))
 	s.router.Get("/api/user/urls", wrap(hs.APIGetUserURLs))
 	s.router.Delete("/api/user/urls", wrap(hs.APIDeleteUserURLs))
+	s.router.Get("/api/internal/stats", middleware.WithTrustedSubnet(s.cfg, wrap(hs.APIGetStats)))
 
 	s.router.Mount("/debug", chiMiddleware.Profiler())
 }

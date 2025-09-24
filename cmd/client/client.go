@@ -1,58 +1,72 @@
 package main
 
 import (
-	"bufio"
+	"context"
 	"fmt"
-	"io"
-	"net/http"
-	"os"
-	"strings"
+	"log"
+	"time"
+
+	"github.com/stlesnik/url_shortener/api"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
-	endpoint := "http://localhost:8080/"
-	// контейнер данных для запроса
-	//data := url.Values{}
-	// приглашение в консоли
-	fmt.Println("Введите длинный URL")
-	// открываем потоковое чтение из консоли
-	reader := bufio.NewReader(os.Stdin)
-	// читаем строку из консоли
-	long, err := reader.ReadString('\n')
+	// Connect to gRPC server
+	conn, err := grpc.NewClient("localhost:9090", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		panic(err)
+		log.Fatalf("Failed to connect: %v", err)
 	}
-	long = strings.TrimSuffix(long, "\n")
-	// заполняем контейнер данными
-	//data.Set("url", long)
-	// добавляем HTTP-клиент
-	client := &http.Client{}
-	// пишем запрос
-	// запрос методом POST должен, помимо заголовков, содержать тело
-	// тело должно быть источником потокового чтения io.Reader
-	//request, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(data.Encode()))
-	request, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(long))
+	defer func() {
+		if err := conn.Close(); err != nil {
+			log.Printf("failed to close grpc connection")
+		}
+	}()
+
+	client := api.NewURLShortenerClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
+	// Test SaveURL
+	fmt.Println("Testing SaveURL...")
+	resp, err := client.SaveURL(ctx, &api.SaveURLRequest{
+		LongUrl: "https://www.google.com",
+		UserId:  "test-user-123",
+	})
 	if err != nil {
-		panic(err)
+		log.Printf("SaveURL failed: %v", err)
+	} else {
+		fmt.Printf("Short URL: %s, IsDouble: %v\n", resp.ShortUrl, resp.IsDouble)
 	}
-	// в заголовках запроса указываем кодировку
-	request.Header.Add("Content-Type", "text/plain")
-	// отправляем запрос и получаем ответ
-	response, err := client.Do(request)
+
+	// Test APIPrepareShortURL
+	fmt.Println("\nTesting APIPrepareShortURL...")
+	apiResp, err := client.APIPrepareShortURL(ctx, &api.APIPrepareShortURLRequest{
+		LongUrl: "https://www.github.com",
+	})
 	if err != nil {
-		panic(err)
+		log.Printf("APIPrepareShortURL failed: %v", err)
+	} else {
+		fmt.Printf("API Short URL: %s, IsDouble: %v\n", apiResp.ShortUrl, apiResp.IsDouble)
 	}
-	// выводим код ответа
-	fmt.Println("Статус-код ", response.Status)
-	// читаем поток из тела ответа
-	body, err := io.ReadAll(response.Body)
+
+	// Test PingDB
+	fmt.Println("\nTesting PingDB...")
+	pingResp, err := client.PingDB(ctx, &api.PingDBRequest{})
 	if err != nil {
-		panic(err)
+		log.Printf("PingDB failed: %v", err)
+	} else {
+		fmt.Printf("PingDB success: %v\n", pingResp.Success)
 	}
-	// и печатаем его
-	fmt.Println(string(body))
-	err = response.Body.Close()
+
+	// Test APIGetStats
+	fmt.Println("\nTesting APIGetStats...")
+	statsResp, err := client.APIGetStats(ctx, &api.APIGetStatsRequest{})
 	if err != nil {
-		panic(err)
+		log.Printf("APIGetStats failed: %v", err)
+	} else {
+		fmt.Printf("Stats - URLs: %d, Users: %d\n", statsResp.UrlCount, statsResp.UserCount)
 	}
+
+	fmt.Println("\nAll tests completed!")
 }

@@ -38,6 +38,9 @@ func (m *mockRepo) SaveBatchURL(_ context.Context, _ []repository.URLPair) error
 func (m *mockRepo) DeleteURLList(values []interface{}, _ []string) (int64, error) {
 	return int64(len(values)), nil
 }
+func (m *mockRepo) GetStats(_ context.Context) (models.StatsDTO, error) {
+	return models.StatsDTO{URLCount: 1, UserCount: 1}, nil
+}
 
 // Example for SaveURL handler
 func ExampleHandler_SaveURL() {
